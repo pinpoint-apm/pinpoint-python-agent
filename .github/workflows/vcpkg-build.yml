@@ -1,0 +1,137 @@
+name: Build and test (vcpkg)
+
+# Builds inside pinpointdocker/pinpoint-cpp-build-env, the image the C++ agent
+# publishes from its ci/Dockerfile.vcpkg. That image carries the whole native
+# dependency closure -- gRPC, Protobuf, Abseil, OpenSSL, RE2, c-ares, zlib,
+# yaml-cpp, fmt, GoogleTest -- in a vcpkg binary cache, so a job compiles agent
+# code instead of rebuilding gRPC: the dependency step is a ~15s cache restore
+# rather than ~10 minutes of compiling.
+#
+# The restore only hits while the image's pinned vcpkg checkout matches the
+# builtin-baseline and the overrides in third_party/pinpoint-cpp-agent/vcpkg.json.
+# When those drift, vcpkg rebuilds the missed ports from source -- still
+# correct, just slow -- so bump the image tag below together with a submodule
+# bump that moves either.
+#
+# The complement to tests.yml: that job builds the FetchContent path on a plain
+# runner, this one builds the vcpkg path. vcpkg's x64-linux triplet is static,
+# so libpinpoint_cpp here embeds gRPC/Protobuf/Abseil and `_native` needs
+# nothing on the library path beyond its own sibling -- the transitive-dylib
+# problem docs/development.md §5 exists for does not arise on this path.
+
+on:
+  # push is limited to main so that a pull request from a branch in this
+  # repository is built once, by pull_request, instead of twice.
+  #push:
+  #  branches: [main]
+  #pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to the same branch or pull request makes the in-flight run
+# obsolete; do not keep paying for it.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  vcpkg:
+    name: vcpkg preset, native extension, tests
+    runs-on: ubuntu-latest
+    # Pinned rather than tracking a floating tag: republishing the image after
+    # a dependency bump must not silently change what an existing commit builds
+    # against.
+    container: pinpointdocker/pinpoint-cpp-build-env:1.0.0
+
+    env:
+      # The vcpkg tree the C++ agent's preset installs into. The extension build
+      # is pointed back at it so vcpkg does not install a second copy of the
+      # closure under build/release/.
+      VCPKG_TREE: third_party/pinpoint-cpp-agent/build/vcpkg/vcpkg_installed
+      # scripts/dev.sh defaults this to an internal collector hostname that does
+      # not resolve here. Everything that needs a collector stands up its own
+      # mock, so pin it at the loopback address and keep the job hermetic.
+      PINPOINT_PY_COLLECTOR_HOST: 127.0.0.1
+
+    steps:
+      # Recursive: the C++ agent carries the Protobuf/gRPC service definitions
+      # in a submodule of its own and does not build without them. The image
+      # sets safe.directory globally, which is what lets git read a checkout
+      # owned by the runner's uid.
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          submodules: recursive
+          fetch-depth: 1
+
+      # The image is a C++ build environment. It ships python3 -- several vcpkg
+      # ports script with it -- but no Python headers, no pip and no ensurepip,
+      # so neither pybind11_add_module's Development.Module nor a venv for the
+      # test suite is available until this runs.
+      - name: Install the Python toolchain
+        run: |
+          apt-get update
+          apt-get install --yes --no-install-recommends python3-dev python3-venv
+          python3 --version
+          cmake --version
+
+      # Created before the extension is built so the build can target this
+      # interpreter: the artifact is pinned to the Python ABI it was compiled
+      # against, and a mismatch here would only surface as an ImportError in
+      # the test step. Mirrors [project.optional-dependencies].test plus the
+      # wrapt runtime dep, installed directly rather than through
+      # `pip install .[test]` so pip does not kick off a second CMake build.
+      #
+      # The framework and driver clients in tests/integration/requirements.txt
+      # are deliberately left out: every module needing one importorskips it,
+      # and installing them would only add the container-backed modules, which
+      # have no Docker daemon to talk to from inside a container job.
+      - name: Create the virtualenv and install test dependencies
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install --upgrade pip
+          .venv/bin/pip install wrapt pytest pytest-cov grpcio grpcio-tools
+
+      # The submodule's own recipe, not the pinpoint-vcpkg-build copy baked into
+      # the image: the image supplies the toolchain and the dependency cache,
+      # the commit supplies its build recipe, so every commit is built by the
+      # script it shipped with. Configures (where the vcpkg restore happens),
+      # builds the shared and static libraries and runs ctest, timing each
+      # phase -- a slow log then says whether the cost was the dependency
+      # restore or the agent's own code. This is also what verifies the
+      # submodule pin still builds and passes on its own preset.
+      - name: Build and test the C++ agent (vcpkg preset)
+        run: ./third_party/pinpoint-cpp-agent/ci/docker-vcpkg-build.sh third_party/pinpoint-cpp-agent
+
+      # VCPKG_MANIFEST_DIR is required, not decoration: vcpkg.json lives in the
+      # submodule and not at this repository's top level, so the toolchain would
+      # otherwise never enter manifest mode and would look for the packages in
+      # an empty $VCPKG_ROOT/installed, failing at
+      # PinpointDependencies.cmake's find_package(Protobuf). VCPKG_INSTALLED_DIR
+      # then points it at the tree the previous step populated, which reduces
+      # its install to a no-op.
+      - name: Build the native extension
+        run: |
+          cmake --preset release \
+            -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
+            -DVCPKG_MANIFEST_DIR=third_party/pinpoint-cpp-agent \
+            -DVCPKG_INSTALLED_DIR="$GITHUB_WORKSPACE/$VCPKG_TREE" \
+            -DPython3_EXECUTABLE="$GITHUB_WORKSPACE/.venv/bin/python"
+          cmake --build --preset release
+          # Static vcpkg triplet, so this should list libpinpoint_cpp and the
+          # C/C++ runtime and nothing else.
+          ldd build/release/_native.cpython-*.so
+
+      # dev.sh symlinks the preset's _native and the libpinpoint_cpp SONAME
+      # chain into pinpoint/, exports the library path and PYTHONPATH and
+      # activates .venv (docs/development.md §4-§5) -- the same entry point the
+      # local workflow uses, so CI and a developer's shell run the suite the
+      # same way. tests/integration is included for test_core.py, which drives
+      # the real C++ agent against an in-process mock collector over gRPC and
+      # is the only end-to-end exercise of the binding this job just built; its
+      # container-backed siblings skip.
+      - name: Run the test suite
+        run: ./scripts/dev.sh release python -m pytest tests/unit tests/integration -q

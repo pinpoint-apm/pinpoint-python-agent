@@ -1,0 +1,17 @@
+build/
+dist/
+_build/
+_generate/
+*.so
+*.so.*
+*.dylib
+*.py[cod]
+*.egg-info
+*.whl
+.coverage
+.coverage.*
+htmlcov/
+*env*
+.DS_Store
+.claude/settings.local.json
+.claude/scheduled_tasks.lock

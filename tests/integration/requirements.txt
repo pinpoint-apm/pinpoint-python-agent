@@ -1,0 +1,36 @@
+# Client libraries + tooling for tests/integration.
+# A missing/unbuildable driver only skips its module — trim freely.
+testcontainers>=4.0
+pytest>=7.0
+pytest-xdist>=3.0
+
+# test_core.py (in-process mock collector): serves the collector gRPC
+# services and generates stubs from the vendored pinpoint-grpc-idl protos.
+grpcio>=1.60
+grpcio-tools>=1.60
+
+redis
+pymysql
+mysql-connector-python
+aiomysql
+sqlalchemy>=2.0
+psycopg[binary]
+asyncpg
+pymongo
+pymemcache
+pika
+aio-pika
+kafka-python
+confluent-kafka
+aiokafka
+elasticsearch>=8,<9
+requests
+httpx
+urllib3
+aiohttp
+pyramid>=2.0
+django>=4.2
+flask
+fastapi
+tornado>=6
+falcon>=3

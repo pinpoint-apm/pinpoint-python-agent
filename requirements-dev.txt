@@ -1,0 +1,38 @@
+# Everything a source checkout needs to run the tests and the example apps.
+#
+#     python3 -m venv .venv
+#     .venv/bin/pip install -r requirements-dev.txt
+#
+# The package itself is deliberately absent: it is imported in place from the
+# source tree rather than installed (docs/development.md §4), so `pip install .`
+# never runs and [project].dependencies never gets resolved.
+
+# Client libraries + tooling the integration suite drives. Left in its own file
+# because tests/integration/README.md documents installing just that one.
+-r tests/integration/requirements.txt
+
+# pinpoint's own runtime dependency, which the in-place import path above means
+# nothing else pulls in.
+wrapt>=1.14
+
+# pytest.ini_options carries --cov in addopts, so this plugin is not optional:
+# without it every pytest invocation fails on an unrecognised argument.
+pytest-cov>=4.1
+
+# Drivers tests/unit and examples/ reach for that the integration list does not
+# carry. Each import is guarded, so a missing one quietly skips its tests
+# instead of failing the run -- which is why they are pinned down here.
+psycopg2-binary                 # tests/unit/instrumentations/test_psycopg_instrumentation.py
+mysqlclient                     # MySQLdb -- examples/flask/flask_demo.py
+aiopg                           # examples/fastapi/fastapi_demo.py
+cassandra-driver                # examples/starlette/starlette_demo.py
+
+# ASGI pieces imported by name, not just pulled in behind fastapi.
+starlette                       # tests/unit/instrumentations/test_root_span_has_event.py
+uvicorn                         # tests/e2e/test_server.py, examples/asgi
+
+# Profilers tests/e2e/compare_overhead.py and run-compare.sh shell out to.
+psutil
+py-spy
+yappi
+snakeviz

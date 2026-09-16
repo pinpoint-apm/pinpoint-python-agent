@@ -1,0 +1,100 @@
+[build-system]
+requires = [
+    "setuptools>=64",
+    "ninja; platform_system!='Windows'",
+    # Floor: CMakeLists.txt's cmake_minimum_required. Ceiling: CMake 4 dropped
+    # compatibility with cmake_minimum_required(VERSION < 3.5), which the
+    # vendored gRPC dependency tree still declares in places. Pinning == froze
+    # us on 3.21.0 (2021), whose FindPython3 predates the 3.13/3.14 ABIs we now
+    # build wheels for.
+    "cmake>=3.21,<4; platform_system!='Windows'",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pinpoint-python-agent"
+version = "1.0.0"
+description = "Pinpoint APM Python agent (pybind11 wrapper around pinpoint-cpp-agent)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "NAVER Pinpoint" },
+]
+keywords = ["apm", "tracing", "pinpoint", "observability"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: C++",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Monitoring",
+]
+dependencies = [
+    "wrapt>=1.14",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0",
+    "pytest-cov>=4.1",
+    # tests/integration/_collector.py stands up a MockCollector gRPC server and
+    # generates its stubs from the submodule's .proto at session start. Both are
+    # imported lazily, so without these the tests that drive the real native
+    # agent — including the ones under tests/unit — fail at fixture setup rather
+    # than at collection.
+    "grpcio>=1.60",
+    "grpcio-tools>=1.60",
+]
+[project.scripts]
+pinpoint-run = "pinpoint.bootstrap.cli:main"
+
+[project.urls]
+Homepage = "https://pinpoint-apm.github.io/pinpoint/"
+Repository = "https://github.com/pinpoint-apm/pinpoint-python-agent"
+
+[tool.setuptools.packages.find]
+include = ["pinpoint*"]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests/unit",
+    "tests/integration",
+]
+addopts = [
+    "--cov=pinpoint",
+    "--cov-report=term-missing",
+]
+
+[tool.coverage.run]
+branch = true
+patch = ["subprocess"]
+
+[tool.cibuildwheel]
+# Every version requires-python admits. Free-threaded builds (cp3XXt-*) are not
+# matched by these selectors and stay out until the extension is audited for it.
+build = "cp311-* cp312-* cp313-* cp314-*"
+skip = "*-win* *-musllinux*"
+archs = "auto64"
+build-verbosity = 1
+test-command = "python -c \"import pinpoint; import pinpoint._native\""
+
+[tool.cibuildwheel.linux]
+# _native links gRPC/protobuf/absl as separate shared objects (BUILD_SHARED_LIBS
+# in CMakeLists.txt), so the repair step is what actually makes the wheel
+# self-contained -- only libpinpoint_cpp is copied next to _native at build time.
+repair-wheel-command = "auditwheel repair --lib-sdir . -w {dest_dir} {wheel}"
+
+[tool.cibuildwheel.macos]
+# delocate (cibuildwheel's default repair) does the same job as auditwheel here.
+# The deployment target is raised off cibuildwheel's x86_64 default of 10.9:
+# the vendored abseil/gRPC use C++17 <filesystem>, which needs 10.15+, and 11.0
+# is the lowest value valid for arm64 and x86_64 alike.
+environment = { MACOSX_DEPLOYMENT_TARGET = "11.0" }

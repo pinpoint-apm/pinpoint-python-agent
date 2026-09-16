@@ -1,0 +1,105 @@
+name: Tests
+
+# Manual only for now, like build-wheels.yml: run it from the Actions tab
+# against the branch you want. To gate commits automatically instead, add:
+#
+#     push:
+#       branches: [main]
+#     pull_request:
+#
+# and a `concurrency: {group: tests-${{ github.ref }}, cancel-in-progress: true}`
+# block so a newer push doesn't pay for the native build twice.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+
+    env:
+      # The preset reads this; keeping the FetchContent downloads outside
+      # build/ is what makes them cacheable across runs (docs/development.md §2).
+      FETCHCONTENT_BASE_DIR: ${{ github.workspace }}/.cache/cmake-fetchcontent
+      CCACHE_DIR: ${{ github.workspace }}/.cache/ccache
+      CCACHE_MAXSIZE: 500M
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      # One version for now: each one costs a full gRPC/protobuf build. Widen to
+      # a matrix over the versions in [tool.cibuildwheel] once the cache is warm.
+      # This is the requires-python floor, so it catches accidental use of a
+      # newer-only feature that the newest interpreter would let through.
+      - name: Set up Python
+        id: python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build ccache
+          cmake --version
+          ninja --version
+
+      # Sources survive `rm -rf build/`, so a hit skips the gRPC clone; ccache
+      # covers the recompile. Keyed on the submodule commit, which is what
+      # actually decides the dependency set.
+      - name: Cache native dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.FETCHCONTENT_BASE_DIR }}
+            ${{ env.CCACHE_DIR }}
+          key: native-${{ runner.os }}-py${{ steps.python.outputs.python-version }}-${{ hashFiles('third_party/pinpoint-cpp-agent/cmake/PinpointDependencies.cmake', 'CMakeLists.txt') }}-${{ github.sha }}
+          restore-keys: |
+            native-${{ runner.os }}-py${{ steps.python.outputs.python-version }}-${{ hashFiles('third_party/pinpoint-cpp-agent/cmake/PinpointDependencies.cmake', 'CMakeLists.txt') }}-
+            native-${{ runner.os }}-py${{ steps.python.outputs.python-version }}-
+
+      - name: Build the native extension
+        run: |
+          mkdir -p "$FETCHCONTENT_BASE_DIR"
+          cmake --preset debug \
+            -DPython3_EXECUTABLE="$(which python)" \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake --build --preset debug
+          ccache --show-stats
+
+      # The in-place dev layout (docs/development.md §4): pinpoint/ needs the
+      # extension itself; its sibling libpinpoint_cpp and the transitive gRPC /
+      # protobuf / absl shared objects are resolved through LD_LIBRARY_PATH below.
+      - name: Wire the extension into the package
+        run: cp build/debug/_native.cpython-*.so pinpoint/
+
+      - name: Install test dependencies
+        # Mirrors the runtime dep plus [project.optional-dependencies].test.
+        # grpcio and grpcio-tools are what tests/unit's real-native modules
+        # need for the MockCollector — they are the only coverage of the
+        # binding this job just built, so they must run rather than skip.
+        # Installed directly rather than via `pip install .[test]` so pip does
+        # not kick off a second CMake build of everything above.
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install wrapt pytest pytest-cov grpcio grpcio-tools
+
+      - name: Run unit tests
+        run: |
+          # The build leaves the dependency shared objects scattered under the
+          # FetchContent tree instead of next to _native, so point ld.so at them
+          # — the Linux half of what scripts/dev.sh does locally.
+          # '*.so*' in one predicate covers both plain .so and SONAME chains
+          # (.so.2, .so.2.0.0) without needing -o and its precedence trap.
+          LD_LIBRARY_PATH="$(find "$FETCHCONTENT_BASE_DIR" build/debug \
+            -name '*.so*' -printf '%h\n' | sort -u | paste -sd:)"
+          export LD_LIBRARY_PATH
+          python -c "import pinpoint; print('pinpoint', pinpoint.__version__)"
+          python -m pytest tests/unit -q

@@ -1,0 +1,90 @@
+name: Build wheels
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-sdist:
+    name: Build sdist
+    runs-on: ubuntu-latest
+
+    steps:
+      # A fresh checkout is the point: MANIFEST.in's recursive-include globs the
+      # filesystem rather than git, so an sdist built in a working tree would
+      # also ship whatever that tree has built.
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Build sdist
+        run: pipx run build --sdist
+
+      - name: Check the sdist is source-only and complete
+        run: |
+          set -euo pipefail
+          tar tzf dist/*.tar.gz | sed 's|^[^/]*/||' | sort > entries.txt
+          # Compiled output must never reach an sdist; it means a build tree
+          # leaked past MANIFEST.in again.
+          if grep -qE '\.(o|a|so|dylib)$|^third_party/pinpoint-cpp-agent/build/' entries.txt; then
+              echo "sdist contains build artifacts:" >&2
+              grep -E '\.(o|a|so|dylib)$|^third_party/pinpoint-cpp-agent/build/' entries.txt >&2
+              exit 1
+          fi
+          # An sdist install compiles the extension and installs the package,
+          # so both halves must be present. The Python half rides on setuptools
+          # package discovery since MANIFEST.in stopped listing it, and
+          # sitecustomize.py is shipped only through its package __init__ — a
+          # discovery regression is exactly what this step exists to catch.
+          for path in CMakeLists.txt src/_native.cpp \
+                      pinpoint/__init__.py \
+                      pinpoint/bootstrap/_pythonpath/sitecustomize.py \
+                      third_party/pinpoint-cpp-agent/CMakeLists.txt; do
+              grep -qx "$path" entries.txt || { echo "sdist is missing $path" >&2; exit 1; }
+          done
+          # A clean sdist measures well under a megabyte; the leak this guards
+          # against produced ~1 GB, so a loose ceiling still catches it.
+          size=$(stat -c %s dist/*.tar.gz)
+          echo "sdist size: $size bytes, $(wc -l < entries.txt) entries"
+          [ "$size" -lt 20971520 ] || { echo "sdist exceeds 20 MB" >&2; exit 1; }
+
+      - name: Upload sdist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+
+  build-wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          # macOS is in the classifiers and README, so it needs wheels too.
+          # arm64 only: this is the default runner arch, and an x86_64 Mac wheel
+          # needs an Intel runner image added here (archs = "auto64" builds the
+          # host arch, and a universal2 build would have to go fat all the way
+          # down through boringssl).
+          - macos-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v4.1.0
+
+      - name: Upload wheel artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          path: wheelhouse/*.whl

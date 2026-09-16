@@ -1,0 +1,6 @@
+include CMakeLists.txt
+recursive-include src *.cpp *.h
+recursive-include third_party/pinpoint-cpp-agent *
+# recursive-include globs the filesystem, not git, so the submodule's ignored
+# build tree would otherwise ship in the sdist (multi-GB in a dev checkout).
+recursive-exclude third_party/pinpoint-cpp-agent/build *
