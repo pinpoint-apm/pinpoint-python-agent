@@ -1,4 +1,4 @@
 [submodule "third_party/pinpoint-cpp-agent"]
 	path = third_party/pinpoint-cpp-agent
 	url = https://github.com/pinpoint-apm/pinpoint-cpp-agent.git
-	branch = main
+	branch = v2.1.0
