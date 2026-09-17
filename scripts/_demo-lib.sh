@@ -111,12 +111,31 @@ wait_kafka_ready() {
 # definitions. Gate on ``rabbitmqctl status`` succeeding inside the
 # container, which doesn't return 0 until the broker is fully up.
 # Uses $CONTAINER.
+# 180s rather than 90: the pika/aio_pika pair share one container, so the
+# second demo's broker boots on a machine still busy tearing the first one
+# down. A boot that never finishes at all is start_container's business.
 wait_rabbit_ready() {
-    local deadline=$((SECONDS + 90))
+    local timeout=180 deadline
+    deadline=$((SECONDS + timeout))
     until docker exec "$CONTAINER" rabbitmqctl status >/dev/null 2>&1; do
-        (( SECONDS > deadline )) && { warn "rabbitmq did not become ready within 90s"; return 1; }
+        (( SECONDS > deadline )) && { warn "rabbitmq did not become ready within ${timeout}s"; return 1; }
         sleep 2
     done
+}
+
+# start_container <docker run args...> — `docker run -d --rm --name $CONTAINER`
+# that fails loudly. When the previous container's port forwarder is still
+# holding the port, the new container dies right after create and --rm deletes
+# it; `docker run` can return 0 before that surfaces, and the readiness wait
+# below then just sits there until it times out. One `docker ps` turns that
+# into an immediate, accurate message.
+start_container() {
+    docker run -d --rm --name "$CONTAINER" "$@" >/dev/null
+    sleep 1
+    if ! docker ps --filter "name=$CONTAINER" --format '{{.Names}}' | grep -qx "$CONTAINER"; then
+        warn "$CONTAINER exited right after start — port still held by a previous container?"
+        exit 1
+    fi
 }
 
 # Load the dev shell, sanity-check the demo venv + native artifact, then
@@ -234,20 +253,13 @@ _broker_demo_up() {
     local broker_env
     if [[ "$BROKER" == kafka ]]; then
         log "starting kafka broker ($CONTAINER, $KAFKA_IMAGE) on :$KAFKA_PORT"
-        docker run -d --rm \
-            --name "$CONTAINER" \
-            -p "$KAFKA_PORT:9092" \
-            "$KAFKA_IMAGE" >/dev/null
+        start_container -p "$KAFKA_PORT:9092" "$KAFKA_IMAGE"
         log "waiting for kafka to come online (~10s)"
         wait_kafka_ready
         broker_env="KAFKA_BOOTSTRAP=127.0.0.1:$KAFKA_PORT KAFKA_TOPIC=$CHANNEL"
     else
         log "starting rabbitmq ($CONTAINER, $RABBIT_IMAGE) on :$RABBIT_PORT (UI :$RABBIT_UI_PORT)"
-        docker run -d --rm \
-            --name "$CONTAINER" \
-            -p "$RABBIT_PORT:5672" \
-            -p "$RABBIT_UI_PORT:15672" \
-            "$RABBIT_IMAGE" >/dev/null
+        start_container -p "$RABBIT_PORT:5672" -p "$RABBIT_UI_PORT:15672" "$RABBIT_IMAGE"
         log "waiting for rabbitmq to come online"
         wait_tcp 127.0.0.1 "$RABBIT_PORT" rabbitmq
         wait_rabbit_ready
@@ -342,7 +354,7 @@ _demo_up() {
 
     if [[ -n "${IMAGE:-}" ]]; then
         log "starting $IMAGE ($CONTAINER)"
-        docker run -d --rm --name "$CONTAINER" "${DOCKER_ARGS[@]}" "$IMAGE" >/dev/null
+        start_container "${DOCKER_ARGS[@]}" "$IMAGE"
         log "waiting for $CONTAINER to become ready"
         "$WAIT_READY"
     fi

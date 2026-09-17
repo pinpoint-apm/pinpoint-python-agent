@@ -43,12 +43,11 @@ up() {
     fi
 
     log "starting mysql:8 ($CONTAINER on :$MYSQL_PORT)"
-    docker run -d --rm \
-        --name "$CONTAINER" \
+    start_container \
         -e MYSQL_ROOT_PASSWORD=root \
         -e MYSQL_DATABASE=demo \
         -p "$MYSQL_PORT:3306" \
-        mysql:8 >/dev/null
+        mysql:8
 
     log "starting flask_upstream on :$UPSTREAM_PORT"
     start_demo upstream flask/flask_upstream.py
