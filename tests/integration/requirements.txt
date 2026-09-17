@@ -1,6 +1,9 @@
 # Client libraries + tooling for tests/integration.
 # A missing/unbuildable driver only skips its module — trim freely.
-testcontainers>=4.0
+# Floor is 4.15: the per-service modules moved to the
+# testcontainers.community namespace there, and conftest.py imports them
+# from it -- the old paths still resolve but warn.
+testcontainers>=4.15
 pytest>=7.0
 pytest-xdist>=3.0
 

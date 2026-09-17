@@ -234,7 +234,7 @@ _HTTP_ECHO_IMAGE = os.environ.get(
 
 @pytest.fixture(scope="module")
 def mysql_container():
-    from testcontainers.mysql import MySqlContainer
+    from testcontainers.community.mysql import MySqlContainer
 
     with MySqlContainer(_MYSQL_IMAGE) as c:
         params = {
@@ -260,7 +260,7 @@ def mysql_container():
 
 @pytest.fixture(scope="module")
 def postgres_container():
-    from testcontainers.postgres import PostgresContainer
+    from testcontainers.community.postgres import PostgresContainer
 
     with PostgresContainer(_POSTGRES_IMAGE, driver=None) as c:
         params = {
@@ -286,7 +286,7 @@ def postgres_container():
 
 @pytest.fixture(scope="module")
 def redis_container():
-    from testcontainers.redis import RedisContainer
+    from testcontainers.community.redis import RedisContainer
 
     with RedisContainer(_REDIS_IMAGE) as c:
         yield {
@@ -297,7 +297,7 @@ def redis_container():
 
 @pytest.fixture(scope="module")
 def mongo_container():
-    from testcontainers.mongodb import MongoDbContainer
+    from testcontainers.community.mongodb import MongoDbContainer
 
     with MongoDbContainer(_MONGO_IMAGE) as c:
         yield {
@@ -330,7 +330,7 @@ def memcached_container():
 
 @pytest.fixture(scope="module")
 def rabbitmq_container():
-    from testcontainers.rabbitmq import RabbitMqContainer
+    from testcontainers.community.rabbitmq import RabbitMqContainer
 
     with RabbitMqContainer(_RABBITMQ_IMAGE) as c:
         params = {
@@ -355,7 +355,7 @@ def rabbitmq_container():
 
 @pytest.fixture(scope="module")
 def kafka_container():
-    from testcontainers.kafka import KafkaContainer
+    from testcontainers.community.kafka import KafkaContainer
 
     with KafkaContainer(_KAFKA_IMAGE) as c:
         yield {"bootstrap": c.get_bootstrap_server()}
@@ -363,7 +363,7 @@ def kafka_container():
 
 @pytest.fixture(scope="module")
 def elasticsearch_container():
-    from testcontainers.elasticsearch import ElasticSearchContainer
+    from testcontainers.community.elasticsearch import ElasticSearchContainer
 
     c = ElasticSearchContainer(_ELASTICSEARCH_IMAGE, mem_limit="2g")
     c.with_env("xpack.security.enabled", "false")
