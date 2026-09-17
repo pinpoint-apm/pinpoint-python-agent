@@ -258,6 +258,18 @@ Logs show connection or gRPC errors.
 2. Test connectivity to each port, e.g. `nc -vz <host> 9991`.
 3. Allow gRPC ports 9991–9993 through firewalls and network policies
    (e.g. Kubernetes).
+4. Still unclear? Turn on gRPC's own internal logging. The native agent embeds
+   gRPC C-core, which reads these environment variables at process start:
+
+   ```bash
+   GRPC_VERBOSITY=DEBUG GRPC_TRACE=connectivity_state,http,tcp python app.py
+   ```
+
+   Output goes to stderr, not the agent log. See gRPC's
+   [environment variables](https://github.com/grpc/grpc/blob/master/doc/environment_variables.md)
+   for `GRPC_VERBOSITY` / `GRPC_TRACE` and the full list of tracers in
+   [trace_flags.md](https://github.com/grpc/grpc/blob/master/doc/trace_flags.md).
+   `GRPC_VERBOSITY=DEBUG` is very noisy — never leave it on in production.
 
 ---
 
