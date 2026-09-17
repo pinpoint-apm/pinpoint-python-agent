@@ -66,3 +66,14 @@ set_target_properties(_native PROPERTIES
         BUILD_WITH_INSTALL_RPATH TRUE
         INSTALL_RPATH "$<IF:$<BOOL:${APPLE}>,@loader_path,$ORIGIN>")
 
+# Let libpinpoint_cpp look beside itself too. Without this it reaches gRPC,
+# protobuf and abseil only through the absolute dependency-tree paths CMake
+# bakes in, which do not survive a `pip install .` or an sdist install: the
+# build directory is gone by the time the extension is imported, and a linker
+# defaulting to --as-needed (most distributions) drops _native's own direct
+# links to those libraries, so its $ORIGIN does not cover them either. Appending
+# to the build RPATH rather than replacing it keeps the dependency-tree entries
+# that a wheel repair step (auditwheel/delocate) resolves through.
+set_target_properties(pinpoint_cpp PROPERTIES
+        BUILD_RPATH "$<IF:$<BOOL:${APPLE}>,@loader_path,$ORIGIN>")
+
