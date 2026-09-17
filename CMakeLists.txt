@@ -17,6 +17,31 @@ set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
 
+# Every target here -- _native, pinpoint_cpp and the whole gRPC/protobuf/absl
+# tree below -- ships side by side inside the wheel, so they all get their own
+# directory as the FIRST rpath entry. @loader_path is the dir containing the
+# loading binary; $ORIGIN is the Linux analog.
+#
+# It has to be the global default rather than a property on one target. A
+# dependency left with only CMake's computed build rpath reaches its siblings
+# through absolute paths into the build tree, and those break twice over:
+#
+# - The build directory is gone once the wheel is installed -- for a `pip
+#   install .` or an sdist install, at a temporary path pip has deleted -- and
+#   a linker defaulting to --as-needed drops _native's direct links, so its own
+#   entry does not cover the gap either.
+# - On macOS the wheel repair step reads that absolute path, decides the
+#   dependency lives outside the wheel, and copies a second copy into
+#   pinpoint/.dylibs. Two copies of libgpr at two paths means dyld loads both,
+#   and absl aborts the import on the duplicate registration of the
+#   grpc_experiments flag. (Linux is spared that one: glibc dedupes on SONAME.)
+#
+# This ADDS to the computed rpath rather than replacing it, which is why it is
+# not BUILD_WITH_INSTALL_RPATH: the build-time tools, protoc above all, live in
+# their own build directories and still need the computed entry to find the
+# dylibs over in CMAKE_LIBRARY_OUTPUT_DIRECTORY.
+set(CMAKE_BUILD_RPATH "$<IF:$<BOOL:${APPLE}>,@loader_path,$ORIGIN>")
+
 include(FetchContent)
 set(BUILD_SHARED_LIBS ON)
 set(BUILD_STATIC_LIBS OFF)
@@ -60,20 +85,4 @@ add_custom_command(TARGET _native POST_BUILD
                 $<TARGET_SONAME_FILE:pinpoint_cpp>
                 $<TARGET_FILE_DIR:_native>)
 
-# Tell _native to look for its sibling dylib in the same directory at runtime.
-# @loader_path is the dir containing _native.so; $ORIGIN is the Linux analog.
-set_target_properties(_native PROPERTIES
-        BUILD_WITH_INSTALL_RPATH TRUE
-        INSTALL_RPATH "$<IF:$<BOOL:${APPLE}>,@loader_path,$ORIGIN>")
-
-# Let libpinpoint_cpp look beside itself too. Without this it reaches gRPC,
-# protobuf and abseil only through the absolute dependency-tree paths CMake
-# bakes in, which do not survive a `pip install .` or an sdist install: the
-# build directory is gone by the time the extension is imported, and a linker
-# defaulting to --as-needed (most distributions) drops _native's own direct
-# links to those libraries, so its $ORIGIN does not cover them either. Appending
-# to the build RPATH rather than replacing it keeps the dependency-tree entries
-# that a wheel repair step (auditwheel/delocate) resolves through.
-set_target_properties(pinpoint_cpp PROPERTIES
-        BUILD_RPATH "$<IF:$<BOOL:${APPLE}>,@loader_path,$ORIGIN>")
 
