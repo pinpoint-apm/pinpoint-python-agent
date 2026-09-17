@@ -19,7 +19,7 @@ import logging
 import os
 
 _LOGGER_NAME = "pinpoint"
-_DEFAULT_LEVEL = logging.WARNING
+_DEFAULT_LEVEL = logging.INFO
 
 # Whether ``pinpoint.*`` logging is at DEBUG, resolved once by configure().
 # Instrumentation call tracing reads this instead of asking the logger on every
@@ -37,7 +37,7 @@ def configure(level: str = "") -> None:
     global debug_enabled
     # Same env var the native agent reads (config.ENV_VAR_PREFIX + _LOG_LEVEL);
     # spelled out to keep this module import-light.
-    level = level or os.environ.get("PINPOINT_PY_LOG_LEVEL", "WARNING")
+    level = level or os.environ.get("PINPOINT_PY_LOG_LEVEL", "INFO")
     logger = logging.getLogger(_LOGGER_NAME)
     if not logger.handlers:
         handler = logging.StreamHandler()
@@ -55,6 +55,6 @@ def configure(level: str = "") -> None:
     else:
         logger.setLevel(_DEFAULT_LEVEL)
         logger.warning(
-            "unknown log level %r; falling back to WARNING", level
+            "unknown log level %r; falling back to INFO", level
         )
     debug_enabled = logger.isEnabledFor(logging.DEBUG)

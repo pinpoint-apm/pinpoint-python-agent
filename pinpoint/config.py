@@ -86,7 +86,7 @@ class Config:
     sampling_continue_throughput: int = 0   # PINPOINT_PY_SAMPLING_CONTINUE_THROUGHPUT
 
     # ---- log ---------------------------------------------------------------
-    log_level: str = "WARN"                 # PINPOINT_PY_LOG_LEVEL
+    log_level: str = "INFO"                 # PINPOINT_PY_LOG_LEVEL
     log_output: str = "stderr"              # "stderr" -> empty FilePath, else treated as path
     log_max_file_size: int = 10             # MB; rotation is native-side
     log_max_backups: int = 1               # rotated files retained

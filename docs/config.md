@@ -116,7 +116,7 @@ pinpoint.init(application_name="MyApp", extra_yaml="FutureNativeOption: true")
 
 | `init()` kwarg | Environment Variable | Type | Default | Notes |
 |---|---|---|---|---|
-| `log_level` | `PINPOINT_PY_LOG_LEVEL` | str | `"WARN"` | `debug`, `info`, `warn`/`warning`, `error` (case-insensitive). Configures the native agent **and** the Python-side `pinpoint.*` loggers. |
+| `log_level` | `PINPOINT_PY_LOG_LEVEL` | str | `"INFO"` | `debug`, `info`, `warn`/`warning`, `error` (case-insensitive). Configures the native agent **and** the Python-side `pinpoint.*` loggers. |
 | `log_output` | `PINPOINT_PY_LOG_FILE_PATH` | str | `"stderr"` | `"stderr"` = no file logging (the native agent writes to stdout). Any other value is a file path with rotation; supports the per-worker `%pid%` placeholder. |
 | `log_max_file_size` | `PINPOINT_PY_LOG_MAX_FILE_SIZE` | int | `10` | Max log file size in MB before rotation. |
 | `log_max_backups` | `PINPOINT_PY_LOG_MAX_BACKUPS` | int | `1` | Rotated files retained; native enforces at least 1. |

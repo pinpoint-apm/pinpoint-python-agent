@@ -58,10 +58,10 @@ def test_configure_reads_env_when_no_arg(monkeypatch):
     assert logging.getLogger(_LOGGER_NAME).level == logging.ERROR
 
 
-def test_configure_defaults_to_warning_without_env(monkeypatch):
+def test_configure_defaults_to_info_without_env(monkeypatch):
     monkeypatch.delenv("PINPOINT_PY_LOG_LEVEL", raising=False)
     configure()
-    assert logging.getLogger(_LOGGER_NAME).level == logging.WARNING
+    assert logging.getLogger(_LOGGER_NAME).level == logging.INFO
 
 
 def test_configure_adds_handler_when_none_present():
@@ -94,11 +94,11 @@ def test_configure_handler_uses_expected_format():
     assert "%(message)s" in fmt
 
 
-def test_configure_invalid_level_falls_back_to_warning_without_raising():
+def test_configure_invalid_level_falls_back_to_info_without_raising():
     # A config typo (e.g. PINPOINT_PY_LOG_LEVEL=verbose) must never crash;
     # logging.Logger.setLevel raises ValueError on unknown level names.
     configure("verbose")
-    assert logging.getLogger(_LOGGER_NAME).level == logging.WARNING
+    assert logging.getLogger(_LOGGER_NAME).level == logging.INFO
 
 
 def test_configure_invalid_level_emits_warning():
@@ -114,7 +114,7 @@ def test_configure_invalid_level_emits_warning():
     logger.addHandler(_Capture())
     configure("garbage")
     assert any("garbage" in rec.getMessage() for rec in records)
-    assert logger.level == logging.WARNING
+    assert logger.level == logging.INFO
 
 
 def test_configure_normalizes_warn_alias():
@@ -135,4 +135,4 @@ def test_configure_is_case_insensitive():
 def test_configure_invalid_env_level_falls_back(monkeypatch):
     monkeypatch.setenv("PINPOINT_PY_LOG_LEVEL", "loud")
     configure()
-    assert logging.getLogger(_LOGGER_NAME).level == logging.WARNING
+    assert logging.getLogger(_LOGGER_NAME).level == logging.INFO
