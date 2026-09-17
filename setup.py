@@ -31,13 +31,31 @@ class CMakeBuild(build_ext):
     def build_extension(self, ext: Extension) -> None:
         extdir = (Path.cwd() / self.get_ext_fullpath(ext.name)).parent.resolve()
 
+        # Is a wheel-repair step going to run after this build? cibuildwheel
+        # exports CIBUILDWHEEL, the manylinux images export AUDITWHEEL_PLAT.
+        # It decides who is responsible for the transitive shared libraries
+        # (gRPC, protobuf, abseil, yaml-cpp, fmt), which BUILD_SHARED_LIBS in
+        # CMakeLists.txt makes separate .so/.dylib files that _native links
+        # directly:
+        #
+        # - With a repair step, auditwheel/delocate vendor them into the wheel
+        #   themselves, resolving them out of this build tree, so anything left
+        #   beside _native is shipped a second time and loaded by neither. That
+        #   duplication was 231 MB of the 325 MB a cp312 wheel unpacked to.
+        # - Without one -- `pip install .`, or an sdist install on a platform
+        #   that has no wheel -- nothing bundles anything, so they have to land
+        #   beside _native for its $ORIGIN/@loader_path RUNPATH to find them at
+        #   import time.
+        repaired = bool(os.environ.get("CIBUILDWHEEL") or os.environ.get("AUDITWHEEL_PLAT"))
+
         cmake_args = [
-            f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}{os.sep}",
             # The interpreter this build runs under is the one the extension is
             # for (FindPython's hint; CMakeLists uses find_package(Python3)).
             f"-DPython3_EXECUTABLE={sys.executable}",
             f"-DCMAKE_BUILD_TYPE={'Debug' if self.debug else 'Release'}",
         ]
+        if not repaired:
+            cmake_args.append(f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}{os.sep}")
         # CMAKE_ARGS comes after the defaults, so a user -D wins (last one
         # takes effect) — e.g. -DCMAKE_TOOLCHAIN_FILE for vcpkg.
         cmake_args += shlex.split(os.environ.get("CMAKE_ARGS", ""))
@@ -62,6 +80,36 @@ class CMakeBuild(build_ext):
         subprocess.run(
             ["cmake", "--build", ".", *build_args], cwd=build_temp, check=True
         )
+
+        if not repaired:
+            # CMake wrote straight into the package directory; nothing to move.
+            return
+
+        # Take only the extension and the core it sits next to out of the build
+        # tree, and leave the dependency tree where the repair step will find
+        # it. CMakeLists' POST_BUILD step has already put libpinpoint_cpp's
+        # SONAME file and the real file it points at beside _native here; the
+        # repair step leaves those two alone because they are in the wheel.
+        ext_path = Path(self.get_ext_fullpath(ext.name))
+        ext_path.parent.mkdir(parents=True, exist_ok=True)
+
+        built = sorted(build_temp.glob("_native*.so"))
+        if not built:
+            msg = f"cmake produced no _native*.so under {build_temp}"
+            raise RuntimeError(msg)
+        self.copy_file(os.fspath(built[0]), os.fspath(ext_path))
+
+        cores = sorted(
+            [
+                *build_temp.glob("libpinpoint_cpp.so*"),
+                *build_temp.glob("libpinpoint_cpp*.dylib"),
+            ]
+        )
+        if not cores:
+            msg = f"cmake copied no libpinpoint_cpp beside _native in {build_temp}"
+            raise RuntimeError(msg)
+        for core in cores:
+            self.copy_file(os.fspath(core), os.fspath(ext_path.parent / core.name))
 
 
 setup(
