@@ -513,7 +513,7 @@ def test_control_flow_ignores_tornado_httpclient_http_error():
 
 
 # ---------------------------------------------------------------------------
-# Reentrancy marker (f14c896) — the marker must actually be *stamped* by the
+# Reentrancy marker — the marker must actually be *stamped* by the
 # wrapper, not just read. These drive a genuine nested re-entry rather than
 # pre-seeding the marker by hand.
 # ---------------------------------------------------------------------------
@@ -605,7 +605,7 @@ def test_execute_wrapper_does_not_record_control_flow_event_error(fake_agent):
     """``raise HTTPError(404)`` is normal control flow: the handler-method span
     EVENT must be opened but NOT flagged as an error. Before the fix,
     ``span_event_scope`` recorded it unconditionally — telemetry noise on every
-    idiomatic 4xx, the exact class of thing 9720103 set out to remove."""
+    idiomatic 4xx."""
     request = _FakeRequest()
     handler = UserHandler(request, status=404)
 

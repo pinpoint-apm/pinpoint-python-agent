@@ -258,7 +258,7 @@ def test_handle_request_wrapper_passes_through_on_true_reentrancy_marker(fake_ag
 
 
 def test_handle_request_wrapper_nested_reentry_opens_single_root_span(fake_agent):
-    """The headline reentrancy fix (f14c896) drives the *stamp* side: the outer
+    """The headline reentrancy fix drives the *stamp* side: the outer
     wrapper must mark the per-request marker before dispatch so a stacked inner
     wrapper re-entering ``_handle_request`` for the same request passes through.
     A genuine nested re-entry must yield exactly one root span — dropping the
