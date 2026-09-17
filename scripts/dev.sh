@@ -71,7 +71,20 @@ _pp_dev() {
             echo "    cmake --preset $preset && cmake --build --preset $preset" >&2
             return 1
         fi
-        lib="$(find "$build" -maxdepth 1 -name "$versioned" 2>/dev/null | sort | head -1 || true)"
+        # Newest by mtime, not lexically first: a core version bump leaves the
+        # previous libpinpoint_cpp.2.0.0 sitting beside the new 2.1.0 — ninja
+        # links the new one and never removes the old — and `sort | head -1`
+        # picked *that*, wiring pinpoint/ to a core the freshly built _native
+        # was not compiled against. mtime rather than a version sort so that
+        # going back to an older core and rebuilding wires the rebuild instead
+        # of the highest version still lying in the tree.
+        # -print0/xargs -0: the repo can sit under a path with spaces.
+        lib="$(find "$build" -maxdepth 1 -name "$versioned" -print0 2>/dev/null |
+            xargs -0 ls -t 2>/dev/null | head -1 || true)"
+        # With no match, xargs still runs ls once (POSIX) and it lists the
+        # working directory, handing back a bare name — so anything that is not
+        # a path under $build means "none found".
+        case "$lib" in "$build"/*) ;; *) lib="" ;; esac
         [[ -n "$lib" ]] || { echo "no versioned $plain under $build" >&2; return 1; }
 
         # Drop stale wiring first: a leftover chain from another core version
@@ -125,9 +138,17 @@ _pp_dev() {
     # -print0/-0 and one awk doing dirname+dedupe: a path with spaces would
     # otherwise be split by `xargs -n1 dirname` (the FetchContent tree, or the
     # repo itself, can sit under one). awk reads whole lines, so it is safe.
+    #
+    # The prefix test is what keeps a not-yet-built tree honest: with nothing to
+    # match, xargs still runs ls once (POSIX) and it lists the working
+    # directory, whose bare names would otherwise land in the search path as
+    # relative entries — ld.so resolves those against the cwd of whatever runs
+    # later. find's output always starts with the directory it was handed, so
+    # anything that does not is not ours.
     dirs="$dirs$(find "$root/build" -name "$libglob" -print0 2>/dev/null |
         xargs -0 ls -t 2>/dev/null |
-        awk '{sub(/\/[^\/]*$/, ""); if (!seen[$0]++) print}' |
+        awk -v pre="$root/build/" 'index($0, pre) == 1 {
+            sub(/\/[^\/]*$/, ""); if (!seen[$0]++) print }' |
         tr '\n' ':' || true)"
     dirs="$dirs$(find "$FETCHCONTENT_BASE_DIR" -name "$libglob" -exec dirname {} \; 2>/dev/null | sort -u | tr '\n' ':' || true)"
     # Ours lead, whatever the caller already had follows; pathclean then drops
