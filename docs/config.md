@@ -117,9 +117,9 @@ pinpoint.init(application_name="MyApp", extra_yaml="FutureNativeOption: true")
 | `init()` kwarg | Environment Variable | Type | Default | Notes |
 |---|---|---|---|---|
 | `log_level` | `PINPOINT_PY_LOG_LEVEL` | str | `"INFO"` | `debug`, `info`, `warn`/`warning`, `error` (case-insensitive). Configures the native agent **and** the Python-side `pinpoint.*` loggers. |
-| `log_output` | `PINPOINT_PY_LOG_FILE_PATH` | str | `"stderr"` | `"stderr"` = no file logging (the native agent writes to stdout). Any other value is a file path with rotation; supports the per-worker `%pid%` placeholder. |
-| `log_max_file_size` | `PINPOINT_PY_LOG_MAX_FILE_SIZE` | int | `10` | Max log file size in MB before rotation. |
-| `log_max_backups` | `PINPOINT_PY_LOG_MAX_BACKUPS` | int | `1` | Rotated files retained; native enforces at least 1. |
+| `log_output` | `PINPOINT_PY_LOG_FILE_PATH` | str | `"stdout"` | `"stdout"` / `"stderr"` = no file logging; the native agent writes to stdout and the Python-side `pinpoint.*` loggers to the named stream. Any other value is a file path that **both** the native agent and the Python loggers write to; supports the per-worker `%pid%` placeholder. The native agent rotates the file and Python follows the rename; with `native_log_to_python=True` Python is the only writer and rotates it itself. |
+| `log_max_file_size` | `PINPOINT_PY_LOG_MAX_FILE_SIZE` | int | `10` | Max log file size in MB before rotation (native and Python handlers alike). |
+| `log_max_backups` | `PINPOINT_PY_LOG_MAX_BACKUPS` | int | `1` | Rotated files retained; at least 1 is enforced. |
 | `native_log_to_python` | `PINPOINT_PY_NATIVE_LOG_TO_PYTHON` | bool | `False` | **Python-only opt-in.** Route native-agent diagnostics to `logging.getLogger("pinpoint.native")` through a bounded asynchronous bridge. Also available as `pinpoint-run --native-log-to-python`. |
 | `native_log_queue_size` | `PINPOINT_PY_NATIVE_LOG_QUEUE_SIZE` | int | `1024` | Python-only bridge record capacity, 2–4096. Invalid/out-of-range values fall back to 1024. The queue also has a 4 MiB byte budget and truncates each message at a valid UTF-8 boundary no later than 4 KiB. |
 

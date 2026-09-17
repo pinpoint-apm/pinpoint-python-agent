@@ -49,7 +49,8 @@ every tracing call degrades to a safe no-op; only the traces are lost.
 ### Routing the agent's own logs
 
 The Python-side logs above go to the `pinpoint` logger, which `init()` gives its
-own `stderr` handler with `propagate = False`. That is deliberate — the agent has
+own handler (stdout by default, or the `log_output=` file with rotation) with
+`propagate = False`. That is deliberate — the agent has
 to be diagnosable regardless of how (or whether) the application configures
 logging, and propagating as well would double every line for an app that
 configures the root logger. The consequence is that the agent's logs do not
@@ -72,7 +73,7 @@ pinpoint_log.propagate = True
 ```
 
 The **native** agent log is separate and not a Python logger at all: it writes
-to stdout, or to a file when `log_output=` is set. See
+to stdout, or to the same `log_output=` file as the Python loggers. See
 [Configuration Guide § Logging](config.md#logging-configuration).
 
 ---

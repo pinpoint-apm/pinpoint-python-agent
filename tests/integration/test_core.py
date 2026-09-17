@@ -1219,7 +1219,8 @@ def test_native_logs_reach_python_and_replace_file_sink(
         assert any("[pinpoint][" in record.getMessage() for record in records)
         assert any("agent shutdown" in record.getMessage()
                    for record in records)
-        assert not log_path.exists() or not log_path.read_bytes()
+        # Python-side agent lines land in the file; the native sink must not.
+        assert not log_path.exists() or "[pinpoint][" not in log_path.read_text()
         assert agent.native_log_dropped == 0
     finally:
         logger.level, logger.handlers[:], logger.propagate = saved

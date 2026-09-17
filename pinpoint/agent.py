@@ -428,7 +428,9 @@ def init(server_info: Optional[str] = None, **overrides) -> Agent:
         # Best-effort: a bad config value here must never crash the user's app on
         # startup, so degrade to defaults and keep going.
         try:
-            _configure_log(cfg.log_level)
+            _configure_log(cfg.log_level, cfg.log_output,
+                           cfg.log_max_file_size, cfg.log_max_backups,
+                           rotate=cfg.native_log_to_python)
         except Exception:  # noqa: BLE001
             _log.debug("log configuration failed; continuing", exc_info=True)
         try:
@@ -853,6 +855,11 @@ def _after_fork_reinit() -> None:
 
     if getattr(old, "_pending", False):
         try:
+            # Re-open the log sink in the child: a %pid% path must name this
+            # worker, and a file handle shared with the master would interleave.
+            _configure_log(cfg.log_level, cfg.log_output,
+                           cfg.log_max_file_size, cfg.log_max_backups,
+                           rotate=cfg.native_log_to_python)
             _instance = _start_agent(cfg, server_info)
             _install_sigterm_exit_handler()
             _log.info(

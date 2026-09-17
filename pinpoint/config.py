@@ -87,8 +87,8 @@ class Config:
 
     # ---- log ---------------------------------------------------------------
     log_level: str = "INFO"                 # PINPOINT_PY_LOG_LEVEL
-    log_output: str = "stderr"              # "stderr" -> empty FilePath, else treated as path
-    log_max_file_size: int = 10             # MB; rotation is native-side
+    log_output: str = "stdout"              # stdout | stderr -> empty FilePath, else a file path
+    log_max_file_size: int = 10             # MB; native and Python handlers rotate alike
     log_max_backups: int = 1               # rotated files retained
     # Python-only: when enabled, a bounded native queue replaces the native
     # stdout/Log.FilePath sink and a daemon consumer emits to pinpoint.native.
@@ -263,9 +263,11 @@ class Config:
         if level in ("warn", "warning"):
             level = "warning"
 
-        # log_output == "stderr" means "no file logging"; native then writes to
-        # stdout (its default). Any other value is treated as a path.
-        file_path = "" if self.log_output.strip().lower() == "stderr" else self.log_output
+        # stdout/stderr mean "no file logging"; native then writes to stdout (its
+        # default). Any other value is treated as a path.
+        file_path = self.log_output.strip()
+        if file_path.lower() in ("stdout", "stderr"):
+            file_path = ""
 
         # ApplicationType goes through AgentOptions.app_type, not the YAML. The
         # coercions below raise a clear Python error rather than shipping a mistyped
@@ -452,6 +454,10 @@ _ENV_MIRROR = {
     "COLLECTOR_SPAN_PORT": ("collector_span_port", _parse_nonnegative_int),
     "COLLECTOR_STAT_PORT": ("collector_stat_port", _parse_nonnegative_int),
     "LOG_LEVEL": ("log_level", _parse_nonempty),
+    # Mirrored so the Python-side handler lands in the same file as the native log.
+    "LOG_FILE_PATH": ("log_output", _parse_nonempty),
+    "LOG_MAX_FILE_SIZE": ("log_max_file_size", _parse_nonnegative_int),
+    "LOG_MAX_BACKUPS": ("log_max_backups", _parse_nonnegative_int),
     "NATIVE_LOG_TO_PYTHON": ("native_log_to_python", _parse_bool),
     "NATIVE_LOG_QUEUE_SIZE": (
         "native_log_queue_size", lambda v, _cur: _normalize_native_log_queue_size(v)),
