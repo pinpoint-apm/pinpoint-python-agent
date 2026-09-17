@@ -68,10 +68,7 @@ _producer: Optional[KafkaProducer] = None
 def _get_producer() -> KafkaProducer:
     global _producer
     if _producer is None:
-        _producer = KafkaProducer(
-            bootstrap_servers=BOOTSTRAP,
-            api_version_auto_timeout_ms=5000,
-        )
+        _producer = KafkaProducer(bootstrap_servers=BOOTSTRAP)
     return _producer
 
 
