@@ -47,18 +47,16 @@ class CMakeBuild(build_ext):
         #   beside _native for its $ORIGIN/@loader_path RUNPATH to find them at
         #   import time.
         #
-        # macOS is deliberately excluded, so it keeps the second layout even
-        # under cibuildwheel: delocate resolves a binary's @rpath entries only
-        # through that binary's own LC_RPATHs, and _native carries just
-        # @loader_path, so moving the dylibs away fails the repair outright
-        # ("@rpath/libabsl_spinlock_wait.dylib not found, requested by
-        # _native.cpython-311-darwin.so"). Linux's auditwheel keys by soname and
-        # walks libpinpoint_cpp's RUNPATH into the build tree, which is why the
-        # slim layout resolves there. Slimming macOS too means giving _native an
-        # rpath into the dependency tree first.
+        # macOS took the second layout even under cibuildwheel until every
+        # target got CMake's computed build rpath alongside @loader_path
+        # (CMAKE_BUILD_RPATH in CMakeLists.txt): delocate resolves a binary's
+        # @rpath entries only through that binary's own LC_RPATHs, so with the
+        # dylibs moved away and nothing but @loader_path to go on it failed the
+        # repair outright ("@rpath/libabsl_spinlock_wait.dylib not found,
+        # requested by _native.cpython-311-darwin.so"). The computed entries
+        # point into this build tree, which is what it walks now. Linux never
+        # needed them: auditwheel keys by soname and follows RUNPATH.
         repaired = bool(os.environ.get("CIBUILDWHEEL") or os.environ.get("AUDITWHEEL_PLAT"))
-        if sys.platform.startswith("darwin"):
-            repaired = False
 
         cmake_args = [
             # The interpreter this build runs under is the one the extension is

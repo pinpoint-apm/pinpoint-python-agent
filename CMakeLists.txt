@@ -18,28 +18,26 @@ set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
 
 # Every target here -- _native, pinpoint_cpp and the whole gRPC/protobuf/absl
-# tree below -- ships side by side inside the wheel, so they all get their own
-# directory as the FIRST rpath entry. @loader_path is the dir containing the
-# loading binary; $ORIGIN is the Linux analog.
+# tree below -- gets its own directory as the FIRST rpath entry, ahead of the
+# absolute build-tree paths CMake computes. @loader_path is the dir containing
+# the loading binary; $ORIGIN is the Linux analog.
 #
-# It has to be the global default rather than a property on one target. A
-# dependency left with only CMake's computed build rpath reaches its siblings
-# through absolute paths into the build tree, and those break twice over:
+# It has to be the global default rather than a property on one target. Where
+# setup.py ships the whole tree beside _native -- a `pip install .` or an sdist
+# install, anywhere no wheel repair step follows -- a dependency reaching its
+# siblings only through those computed paths finds nothing at import time: the
+# build directory is gone, at a temporary path pip has already deleted, and a
+# linker defaulting to --as-needed drops _native's direct links, so its own
+# entry does not cover the gap either. On macOS that same layout also made
+# delocate read the absolute path, decide the dependency lived outside the
+# wheel, and copy a second one into pinpoint/.dylibs -- two copies of libgpr at
+# two paths, so dyld loaded both and absl aborted the import on the duplicate
+# registration of the grpc_experiments flag.
 #
-# - The build directory is gone once the wheel is installed -- for a `pip
-#   install .` or an sdist install, at a temporary path pip has deleted -- and
-#   a linker defaulting to --as-needed drops _native's direct links, so its own
-#   entry does not cover the gap either.
-# - On macOS the wheel repair step reads that absolute path, decides the
-#   dependency lives outside the wheel, and copies a second copy into
-#   pinpoint/.dylibs. Two copies of libgpr at two paths means dyld loads both,
-#   and absl aborts the import on the duplicate registration of the
-#   grpc_experiments flag. (Linux is spared that one: glibc dedupes on SONAME.)
-#
-# This ADDS to the computed rpath rather than replacing it, which is why it is
-# not BUILD_WITH_INSTALL_RPATH: the build-time tools, protoc above all, live in
-# their own build directories and still need the computed entry to find the
-# dylibs over in CMAKE_LIBRARY_OUTPUT_DIRECTORY.
+# The computed entries stay, rather than being replaced: they are how a repair
+# step resolves the dependency tree out of the build directory, and how the
+# build-time tools -- protoc above all, off in its own build directory -- find
+# the libraries they link against.
 set(CMAKE_BUILD_RPATH "$<IF:$<BOOL:${APPLE}>,@loader_path,$ORIGIN>")
 
 include(FetchContent)
