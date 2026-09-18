@@ -2,6 +2,15 @@ name: Build wheels
 
 on:
   workflow_dispatch:
+    inputs:
+      os:
+        description: Which runners to build wheels on
+        type: choice
+        default: all
+        options:
+          - all
+          - ubuntu-latest
+          - macos-latest
 
 permissions:
   contents: read
@@ -64,14 +73,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-latest
-          # macOS is in the classifiers and README, so it needs wheels too.
-          # arm64 only: this is the default runner arch, and an x86_64 Mac wheel
-          # needs an Intel runner image added here (archs = "auto64" builds the
-          # host arch, and a universal2 build would have to go fat all the way
-          # down through boringssl).
-          - macos-latest
+        # The `os` input picks one runner or both. A wheel build is an hour or
+        # more per runner, so being able to rerun just the one that failed is
+        # worth the expression.
+        #
+        # macOS is in the classifiers and README, so it needs wheels too. arm64
+        # only: this is the default runner arch, and an x86_64 Mac wheel needs an
+        # Intel runner image added to the options (archs = "auto64" builds the
+        # host arch, and a universal2 build would have to go fat all the way down
+        # through boringssl).
+        os: >-
+          ${{ inputs.os == 'all' && fromJSON('["ubuntu-latest", "macos-latest"]')
+          || fromJSON(format('["{0}"]', inputs.os)) }}
 
     steps:
       - name: Check out source
