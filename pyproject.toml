@@ -13,13 +13,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pinpoint-python-agent"
-version = "1.0.0"
-description = "Pinpoint APM Python agent (pybind11 wrapper around pinpoint-cpp-agent)"
+version = "1.0.1"
+description = "Pinpoint APM Python agent"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
 authors = [
-    { name = "NAVER Pinpoint" },
+    { name = "Pinpoint-APM" },
 ]
 keywords = ["apm", "tracing", "pinpoint", "observability"]
 classifiers = [
