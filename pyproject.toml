@@ -90,7 +90,11 @@ test-command = "python -c \"import pinpoint; import pinpoint._native\""
 # _native links gRPC/protobuf/absl as separate shared objects (BUILD_SHARED_LIBS
 # in CMakeLists.txt), so the repair step is what actually makes the wheel
 # self-contained -- only libpinpoint_cpp is copied next to _native at build time.
-repair-wheel-command = "auditwheel repair --lib-sdir . -w {dest_dir} {wheel}"
+# The strip afterwards halves the wheel again: BoringSSL builds with -ggdb, and
+# each patchelf pass auditwheel makes leaves a dead copy of .dynstr behind (see
+# scripts/strip_wheel.py). The project is mounted at the working directory
+# inside the manylinux container, so the relative path resolves there.
+repair-wheel-command = "auditwheel repair --lib-sdir . -w {dest_dir} {wheel} && python3 scripts/strip_wheel.py {dest_dir}/*.whl"
 
 [tool.cibuildwheel.macos]
 # delocate (cibuildwheel's default repair) does the same job as auditwheel here.
