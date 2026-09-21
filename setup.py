@@ -60,8 +60,18 @@ class CMakeBuild(build_ext):
 
         cmake_args = [
             # The interpreter this build runs under is the one the extension is
-            # for (FindPython's hint; CMakeLists uses find_package(Python3)).
+            # for. CMakeLists uses find_package(Python3), which reads the first
+            # hint; pybind11 2.13 does its own lookup through the classic
+            # FindPythonInterp/FindPythonLibs (PYTHON_EXECUTABLE) or, with
+            # PYBIND11_FINDPYTHON, FindPython (Python_EXECUTABLE), and neither
+            # reads Python3_EXECUTABLE. Without all three, pybind11 takes the
+            # first python3 on PATH and the extension is compiled against that
+            # interpreter's headers -- an ABI mismatch that only surfaces at
+            # import time. cibuildwheel hides it by putting the target
+            # interpreter first on PATH; a plain `pip wheel` from a venv does not.
             f"-DPython3_EXECUTABLE={sys.executable}",
+            f"-DPython_EXECUTABLE={sys.executable}",
+            f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DCMAKE_BUILD_TYPE={'Debug' if self.debug else 'Release'}",
         ]
         if not repaired:
