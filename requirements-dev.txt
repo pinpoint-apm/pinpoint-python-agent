@@ -19,6 +19,11 @@ wrapt>=1.14
 # without it every pytest invocation fails on an unrecognised argument.
 pytest-cov>=4.1
 
+# Linter. [tool.ruff] in pyproject.toml pins the rule set; the version is held
+# to one minor as well so rules newly added to the selected categories do not
+# switch on by surprise. Run `ruff check .` from the repo root.
+ruff>=0.16,<0.17
+
 # Drivers tests/unit and examples/ reach for that the integration list does not
 # carry. Each import is guarded, so a missing one quietly skips its tests
 # instead of failing the run -- which is why they are pinned down here.

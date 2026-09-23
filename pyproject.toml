@@ -77,6 +77,26 @@ addopts = [
 branch = true
 patch = ["subprocess"]
 
+[tool.ruff]
+# The vendored C++ agent tree and the protobuf-generated modules under
+# examples/ are not ours to lint.
+extend-exclude = ["third_party", "*_pb2.py", "*_pb2_grpc.py"]
+
+[tool.ruff.lint]
+# Pinned explicitly so a ruff upgrade cannot widen the rule set: 0.16 turned
+# on far more than the historical E4/E7/E9/F defaults. UP and PLW are the two
+# categories issue #2 cleaned up, kept on so they stay clean.
+select = ["E4", "E7", "E9", "F", "UP", "PLW"]
+# Module-level state updated through `global` is how the agent keeps its
+# singletons and one-shot registration flags (agent._instance, the atexit /
+# fork / SIGTERM hooks, ...); rewriting that is not a lint fix.
+ignore = ["PLW0603"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests import the library under test only after pytest.importorskip() and
+# similar guards, so their imports legitimately sit below other statements.
+"tests/**" = ["E402"]
+
 [tool.cibuildwheel]
 # Every version requires-python admits. Free-threaded builds (cp3XXt-*) are not
 # matched by these selectors and stay out until the extension is audited for it.

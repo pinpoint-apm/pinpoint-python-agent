@@ -110,6 +110,14 @@ Install the whole thing rather than picking packages off it: every driver import
 is guarded, so a missing one skips its tests instead of failing the run, and the
 gap shows up as quietly thinner coverage.
 
+It also carries `ruff`, the linter. The rule set is pinned under `[tool.ruff]`
+in [`pyproject.toml`](../pyproject.toml) so a ruff upgrade cannot widen it; run
+it from the repository root, where that configuration is picked up:
+
+```bash
+.venv/bin/ruff check .
+```
+
 ## 4. Wire build artifacts into the package
 
 `_native` resolves `libpinpoint_cpp.dylib` via `@loader_path` — the `pinpoint/`
