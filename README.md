@@ -56,6 +56,12 @@ pinpoint-run --app-name my-service --agent-name my-service-web \
     --collector localhost -- python my_app.py
 ```
 
+Or drive it from a YAML config file, optionally selecting one of its profiles:
+
+```bash
+pinpoint-run --config-file pinpoint-config.yaml --active-profile production -- python my_app.py
+```
+
 ### In-code: `init()` + `autoload()`
 
 Call `init()` early in startup, then activate auto-instrumentation. Libraries already imported are instrumented immediately; everything else the moment it is imported.

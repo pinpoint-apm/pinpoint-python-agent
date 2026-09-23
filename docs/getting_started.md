@@ -64,10 +64,11 @@ export PINPOINT_PY_COLLECTOR_STAT_PORT="9992"
 
 ### Option 3: Configuration file
 
-Pass `config_file_path=` to `init()` or set `PINPOINT_PY_CONFIG_FILE`. The
-file uses the native YAML keys and **replaces** the inline configuration
-rendered from kwargs — see the [Configuration Guide](config.md) for the full
-key list:
+Pass `config_file_path=` to `init()`, set `PINPOINT_PY_CONFIG_FILE`, or
+launch with `pinpoint-run --config-file <path>` (add `--active-profile <name>`
+to select a `Profile.<name>` section). The file uses the native YAML keys and
+**replaces** the inline configuration rendered from kwargs — see the
+[Configuration Guide](config.md) for the full key list:
 
 ```yaml
 ApplicationName: "MyApplication"

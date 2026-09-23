@@ -85,6 +85,15 @@ Or `export PINPOINT_PY_CONFIG_FILE=/path/to/pinpoint-config.yaml`. The file
 uses the native YAML keys (`ApplicationName`, `Collector.Host`, …) and
 replaces the kwargs-rendered YAML entirely.
 
+Under `pinpoint-run` the same file — and the profile to activate from it —
+go on the command line; the launcher exports the matching env vars and
+rejects a path that does not exist:
+
+```bash
+pinpoint-run --config-file /path/to/pinpoint-config.yaml --active-profile production \
+    -- python app.py
+```
+
 ### Escape hatch: `extra_yaml`
 
 A native key not surfaced as a kwarg yet can be appended verbatim:
@@ -107,7 +116,7 @@ pinpoint.init(application_name="MyApp", extra_yaml="FutureNativeOption: true")
 | `enabled` | `PINPOINT_PY_ENABLE` | bool | `True` | `False` disables tracing without code changes: the native side gets `Enable: false` **and** the Python instrumentations short-circuit. |
 | `is_container` | `PINPOINT_PY_IS_CONTAINER` | bool | `False` | The rendered YAML always writes this key, so set it explicitly in containers. (Auto-detection applies only when a config file omits the key.) |
 | `application_type` | — | int | `1700` | Pinpoint service type (`APP_TYPE_PYTHON`). Passed via native `AgentOptions`, not YAML; no env var. |
-| `config_file_path` | `PINPOINT_PY_CONFIG_FILE` | str | `""` | See [Method 3](#method-3-configuration-file). |
+| `config_file_path` | `PINPOINT_PY_CONFIG_FILE` | str | `""` | See [Method 3](#method-3-configuration-file). Also available as `pinpoint-run --config-file`. |
 | `server_info=` (init param) | `PINPOINT_PY_SERVER_INFO` | str | `"Python Application"` | AgentInfo server metadata label. The env var is read by the `pinpoint-run` bootstrap (and its `--server-info` flag), not by a manual `init()`. |
 
 ---
@@ -450,7 +459,7 @@ generation they started with.
 | `enable_callstack_trace` | `PINPOINT_PY_ENABLE_CALLSTACK_TRACE` | bool | `False` | Attach a Python frame trace (up to 64 frames) to `set_error` on sampled span events. The resolved native value is fixed in each span snapshot; reload applies to new spans. |
 | `callstack_trace_new_throughput` | `PINPOINT_PY_CALLSTACK_TRACE_NEW_THROUGHPUT` | int | `1000` | Native admission limit for new exception chains/second, not Python traceback capture cost. `0` = unlimited. |
 | `enable_config_file_watcher` | `PINPOINT_PY_ENABLE_CONFIG_FILE_WATCHER` | bool | `False` | Install the native file watcher at startup. With a config file, put this key in that file or use the environment variable. |
-| `active_profile` | `PINPOINT_PY_ACTIVE_PROFILE` | str | `""` | Select `Profile.<name>` before native environment overrides. |
+| `active_profile` | `PINPOINT_PY_ACTIVE_PROFILE` | str | `""` | Select `Profile.<name>` before native environment overrides. Also available as `pinpoint-run --active-profile`. |
 | `profiles` | — | dict[str, dict] | `{}` | Emits native `Profile` subtrees; nested keys use the native YAML names. A config file replaces this input too. |
 
 ---

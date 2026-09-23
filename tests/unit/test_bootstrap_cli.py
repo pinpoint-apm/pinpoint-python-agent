@@ -19,6 +19,8 @@ import os
 import subprocess
 import sys
 
+import pytest
+
 from pinpoint.bootstrap import cli
 from pinpoint.bootstrap.cli import (
     _parse_agent_flags,
@@ -68,6 +70,63 @@ def test_parse_agent_flags_includes_server_info():
         "PINPOINT_PY_SERVER_INFO": "FastAPI",
     }
     assert remaining == ["python", "app.py"]
+
+
+def test_parse_agent_flags_config_file_and_active_profile(tmp_path, monkeypatch):
+    """``--config-file`` lands in PINPOINT_PY_CONFIG_FILE as an absolute path
+    (so a chdir in the wrapped program cannot lose it) and
+    ``--active-profile`` in PINPOINT_PY_ACTIVE_PROFILE."""
+    config = tmp_path / "pinpoint-config.yaml"
+    config.write_text("ApplicationName: checkout\n")
+    monkeypatch.chdir(tmp_path)
+
+    env, remaining = _parse_agent_flags([
+        "--config-file", "pinpoint-config.yaml",
+        "--active-profile", "production",
+        "--", "python", "app.py",
+    ])
+
+    assert env == {
+        "PINPOINT_PY_CONFIG_FILE": str(config),
+        "PINPOINT_PY_ACTIVE_PROFILE": "production",
+    }
+    assert os.path.isabs(env["PINPOINT_PY_CONFIG_FILE"])
+    assert remaining == ["python", "app.py"]
+
+
+def test_parse_agent_flags_rejects_missing_config_file(tmp_path, capsys):
+    """Fail in the launcher, not in the child: a typo'd path must not start
+    the program with an agent that silently fell back to defaults."""
+    missing = tmp_path / "nope.yaml"
+
+    with pytest.raises(SystemExit) as excinfo:
+        _parse_agent_flags(["--config-file", str(missing), "python", "app.py"])
+
+    assert excinfo.value.code == 2
+    err = capsys.readouterr().err
+    assert "--config-file" in err
+    assert "no such file" in err
+
+
+def test_main_execs_command_with_config_file_and_profile(tmp_path, monkeypatch):
+    config = tmp_path / "pinpoint-config.yaml"
+    config.write_text("ApplicationName: checkout\n")
+    captured = {}
+
+    def _execvpe(command, argv, env):
+        captured.update(command=command, argv=argv, env=env)
+        raise OSError("stop after capture")
+
+    monkeypatch.setattr(cli.os, "execvpe", _execvpe)
+
+    assert main([
+        "--config-file", str(config),
+        "--active-profile", "staging",
+        "--", "python", "app.py",
+    ]) == 127
+    assert captured["env"]["PINPOINT_PY_CONFIG_FILE"] == str(config)
+    assert captured["env"]["PINPOINT_PY_ACTIVE_PROFILE"] == "staging"
+    assert captured["env"]["PINPOINT_PY_AUTOLOAD"] == "1"
 
 
 def test_parse_agent_flags_enables_native_python_logging_bridge():

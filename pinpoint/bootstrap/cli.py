@@ -18,6 +18,11 @@
 Usage:
     pinpoint-run [agent-options] <command> [command args...]
 
+Agent options map one-to-one onto ``PINPOINT_PY_*`` env vars — ``--app-name``,
+``--agent-name``, ``--collector``, ``--server-info``, ``--config-file``,
+``--active-profile`` and the native-log flags — so a flag and the matching
+env var are interchangeable; the flag wins when both are given.
+
 Prepends `pinpoint/bootstrap/_pythonpath` to PYTHONPATH so the
 sitecustomize.py there fires at interpreter start, then execs the target
 command. That directory holds nothing but sitecustomize.py on purpose — see
@@ -49,22 +54,51 @@ def _prepend_pythonpath(env: dict, path: str) -> None:
         env["PYTHONPATH"] = path + os.pathsep + existing
 
 
-# Agent flag -> the env var it sets. Everything else is tuned through the
-# PINPOINT_PY_* env vars the native agent reads itself.
-_FLAG_ENV = {
-    "app_name": "PINPOINT_PY_APPLICATION_NAME",
-    "agent_name": "PINPOINT_PY_AGENT_NAME",
-    "collector": "PINPOINT_PY_COLLECTOR_HOST",
-    "server_info": "PINPOINT_PY_SERVER_INFO",
+def _existing_file(value: str) -> str:
+    """argparse type for ``--config-file``: fail fast in the launcher rather
+    than letting the agent in the child process discover a missing file.
+    Returned absolute so the value survives a ``chdir`` in the wrapped
+    program (gunicorn ``--chdir``, daemonizers) and a native config reload."""
+    path = os.path.abspath(value)
+    if not os.path.isfile(path):
+        raise argparse.ArgumentTypeError(f"no such file: {value}")
+    return path
+
+
+# Agent flag -> (the env var it sets, argparse type, help). Everything else
+# is tuned through the PINPOINT_PY_* env vars the native agent reads itself.
+_FLAGS = {
+    "app_name": (
+        "PINPOINT_PY_APPLICATION_NAME", str,
+        "application name shown in the Pinpoint Web UI"),
+    "agent_name": (
+        "PINPOINT_PY_AGENT_NAME", str,
+        "agent display label (defaults to a generated id)"),
+    "collector": (
+        "PINPOINT_PY_COLLECTOR_HOST", str,
+        "collector host to report to"),
+    "server_info": (
+        "PINPOINT_PY_SERVER_INFO", str,
+        "server metadata label sent in AgentInfo"),
+    "config_file": (
+        "PINPOINT_PY_CONFIG_FILE", _existing_file,
+        ("YAML config file; replaces the inline configuration wholesale, "
+         "PINPOINT_PY_* env vars and the other flags still override it")),
+    "active_profile": (
+        "PINPOINT_PY_ACTIVE_PROFILE", str,
+        ("name of the Profile.<name> section to apply on top of the base "
+         "configuration")),
 }
+_FLAG_ENV = {flag: var for flag, (var, _type, _help) in _FLAGS.items()}
 
 _parser = argparse.ArgumentParser(
     prog="pinpoint-run",
     description="Run a Python program with the Pinpoint agent bootstrapped "
                 "at interpreter start.",
 )
-for _flag in _FLAG_ENV:
-    _parser.add_argument("--" + _flag.replace("_", "-"))
+for _flag, (_var, _type, _help) in _FLAGS.items():
+    _parser.add_argument("--" + _flag.replace("_", "-"), type=_type,
+                         help=f"{_help} (sets {_var})")
 _parser.add_argument(
     "--native-log-to-python",
     action="store_true",
