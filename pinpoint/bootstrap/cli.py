@@ -35,7 +35,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
-from typing import List, Sequence
+from collections.abc import Sequence
 
 
 def _bootstrap_dir() -> str:
@@ -117,7 +117,7 @@ _parser.add_argument("command", nargs=argparse.REMAINDER,
                      help="the program to run, with its arguments")
 
 
-def _parse_agent_flags(argv: Sequence[str]) -> tuple[dict, List[str]]:
+def _parse_agent_flags(argv: Sequence[str]) -> tuple[dict, list[str]]:
     """Split ``argv`` into the env vars our flags set and the command."""
     ns = _parser.parse_args(list(argv))
     env = {var: getattr(ns, flag) for flag, var in _FLAG_ENV.items()

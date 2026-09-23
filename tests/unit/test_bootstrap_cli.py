@@ -341,7 +341,7 @@ def test_sitecustomize_quiet_when_nothing_to_chain_to(tmp_path):
 
     proc = subprocess.run(
         [sys.executable, "-S", str(driver)],
-        env=env, capture_output=True, text=True, timeout=60,
+        env=env, capture_output=True, text=True, check=False, timeout=60,
     )
 
     assert proc.returncode == 0, proc.stderr
@@ -386,7 +386,7 @@ def test_sitecustomize_preserves_chained_syspath_additions(tmp_path):
     )
     proc = subprocess.run(
         [sys.executable, "-c", check],
-        env=env, capture_output=True, text=True, timeout=60,
+        env=env, capture_output=True, text=True, check=False, timeout=60,
     )
 
     assert proc.returncode == 0, proc.stderr
