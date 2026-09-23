@@ -363,5 +363,6 @@ import flask
 sys.exit(0 if already_wrapped("flask.app", "Flask.wsgi_app")
          and already_wrapped("flask.app", "Flask.dispatch_request") else 1)
 """
-    proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+    proc = subprocess.run([sys.executable, "-c", code],
+                          capture_output=True, text=True, check=False)
     assert proc.returncode == 0, proc.stderr

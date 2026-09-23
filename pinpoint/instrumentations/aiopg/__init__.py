@@ -28,8 +28,6 @@ base, which already knows how to read psycopg2's
 
 from __future__ import annotations
 
-from typing import Optional
-
 from ...instrumentor import BaseInstrumentor
 from ...service_type import SERVICE_TYPE_POSTGRESQL
 from ..dbapi import TargetInfo, connection_target, wrap_async_cursor_class
@@ -46,7 +44,7 @@ class AiopgInstrumentor(BaseInstrumentor):
         )
 
 
-def _extract_aiopg_target(cursor) -> Optional[TargetInfo]:
+def _extract_aiopg_target(cursor) -> TargetInfo | None:
     """Resolve the underlying psycopg2 connection. aiopg exposes it via
     ``cursor.connection`` (an aiopg ``Connection``) whose ``raw`` attribute
     holds the wrapped psycopg2 connection. Older versions used ``_conn``."""

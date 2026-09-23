@@ -106,7 +106,7 @@ async def _run() -> None:
             # responsive to SIGTERM even on an idle topic.
             try:
                 record = await asyncio.wait_for(consumer.getone(), timeout=1.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue
             _process(record)
     finally:

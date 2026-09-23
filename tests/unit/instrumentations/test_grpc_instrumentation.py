@@ -385,7 +385,7 @@ def _root_span(agent):
 
 
 def test_client_unary_unary_records_event_and_injects_metadata(fake_agent):
-    span = _root_span(fake_agent)
+    _root_span(fake_agent)
     captured = {}
 
     def continuation(call_details, request):
@@ -470,7 +470,7 @@ def test_client_unary_unary_future_ends_event_at_dispatch(fake_agent):
 
 def test_client_stream_unary_future_ends_event_at_dispatch(fake_agent):
     """Same dispatch-scoped event for ``.future()`` on stream-unary methods."""
-    span = _root_span(fake_agent)
+    _root_span(fake_agent)
     call = _FakeResolvableRpcCall(grpc.StatusCode.OK)
 
     interceptor = _PinpointClientInterceptor()
@@ -487,7 +487,7 @@ def test_client_stream_unary_future_ends_event_at_dispatch(fake_agent):
 def test_client_unary_unary_already_done_call_ends_synchronously(fake_agent):
     """The blocking path returns an already-terminated outcome; the event
     must end synchronously inside the interceptor (no deferral needed)."""
-    span = _root_span(fake_agent)
+    _root_span(fake_agent)
     call = _FakeResolvableRpcCall(grpc.StatusCode.OK, done=True)
 
     interceptor = _PinpointClientInterceptor()
@@ -719,7 +719,7 @@ def test_client_unary_stream_event_is_dispatch_scoped(fake_agent):
 
 
 def test_client_unary_stream_iteration_error_does_not_reopen_dispatch_event(fake_agent):
-    span = _root_span(fake_agent)
+    _root_span(fake_agent)
 
     def gen():
         yield "ok"
@@ -740,7 +740,7 @@ def test_client_unary_stream_iteration_error_does_not_reopen_dispatch_event(fake
 
 
 def test_client_stream_unary_ends_event_after_continuation(fake_agent):
-    span = _root_span(fake_agent)
+    _root_span(fake_agent)
 
     def continuation(call_details, request_iterator):
         list(request_iterator)  # drain
@@ -753,7 +753,7 @@ def test_client_stream_unary_ends_event_after_continuation(fake_agent):
 
 
 def test_client_stream_stream_event_is_dispatch_scoped(fake_agent):
-    span = _root_span(fake_agent)
+    _root_span(fake_agent)
 
     def continuation(call_details, request_iterator):
         return iter(["x", "y"])
@@ -767,7 +767,7 @@ def test_client_stream_stream_event_is_dispatch_scoped(fake_agent):
 
 
 def test_client_streaming_response_proxies_unknown_attrs(fake_agent):
-    span = _root_span(fake_agent)
+    _root_span(fake_agent)
 
     class _FakeCall:
         def __iter__(self): return iter([1, 2])
@@ -1156,7 +1156,7 @@ def test_client_streaming_response_forwards_isinstance(fake_agent):
 def test_client_streaming_response_propagates_rpc_error(fake_agent):
     """The raw grpc error escapes iteration unchanged; the dispatch event is
     not retained to record it from a possibly different thread."""
-    span = _root_span(fake_agent)
+    _root_span(fake_agent)
 
     class _ErroringRendezvous(grpc.RpcError):
         def __iter__(self):

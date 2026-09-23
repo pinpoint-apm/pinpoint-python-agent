@@ -117,7 +117,8 @@ b._enqueue_from_native_thread_for_test('info', 'no-gil')
 assert b.drain(1) == [('info', 'no-gil')]
 """
     completed = subprocess.run(
-        [sys.executable, "-c", code], capture_output=True, text=True, timeout=5)
+        [sys.executable, "-c", code], capture_output=True, text=True,
+        timeout=5, check=False)
     assert completed.returncode == 0, completed.stderr
 
 
@@ -301,6 +302,6 @@ print('DONE', bool(called), agent.native_log_dropped)
 """
     completed = subprocess.run(
         [sys.executable, "-c", code], capture_output=True, text=True,
-        timeout=10)
+        timeout=10, check=False)
     assert completed.returncode == 0, completed.stderr
     assert "DONE True" in completed.stdout

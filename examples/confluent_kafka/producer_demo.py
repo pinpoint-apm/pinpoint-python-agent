@@ -57,7 +57,6 @@ Configurable:
 from __future__ import annotations
 
 import os
-from typing import Optional
 
 import confluent_kafka
 from flask import Flask, jsonify, request
@@ -66,11 +65,11 @@ BOOTSTRAP = os.environ.get("KAFKA_BOOTSTRAP", "localhost:9092")
 DEFAULT_TOPIC = os.environ.get("KAFKA_TOPIC", "demo.confluent-kafka")
 
 app = Flask("demo-confluent-kafka-producer")
-_producer: Optional["confluent_kafka.Producer"] = None
+_producer: confluent_kafka.Producer | None = None
 _delivery_results: list = []
 
 
-def _get_producer() -> "confluent_kafka.Producer":
+def _get_producer() -> confluent_kafka.Producer:
     global _producer
     if _producer is None:
         # Resolve ``Producer`` lazily off the module so we pick up the

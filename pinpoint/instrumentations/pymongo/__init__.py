@@ -33,7 +33,7 @@ from __future__ import annotations
 import functools
 import _thread
 import json
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 from ..._log import get_logger
 from ...annotation import (
@@ -69,8 +69,8 @@ _MONGO_JSON_MAX_STRING = 4096
 # event (which would drive its parent Span from the wrong thread too). Normal
 # started→succeeded/failed callbacks run on the same driver thread, so the key pairs
 # without synchronization. The stored SpanEvent retains its parent Span itself.
-_InflightKey = Tuple[int, Any, int]
-_inflight: Dict[_InflightKey, Any] = {}
+_InflightKey = tuple[int, Any, int]
+_inflight: dict[_InflightKey, Any] = {}
 
 # PyMongo's monitoring contract delivers exactly one succeeded/failed per
 # started, so entries normally clear themselves. A cap covers the case where one
@@ -224,7 +224,7 @@ def _on_failed(event) -> None:
     span_event.end()
 
 
-def _event_key(event) -> Optional[_InflightKey]:
+def _event_key(event) -> _InflightKey | None:
     request_id = getattr(event, "request_id", None)
     if request_id is None:
         return None
@@ -289,7 +289,7 @@ def _annotate_started(span_event, event) -> None:
             )
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def _bson_json_util():
     """``bson.json_util`` (ships with pymongo), or ``None`` when it is not
     importable — either way resolved once, not per command."""

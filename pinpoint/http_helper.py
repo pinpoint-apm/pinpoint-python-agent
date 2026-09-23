@@ -31,7 +31,8 @@ actually land on the span.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Iterable, Mapping, Optional, Tuple, Union
+from typing import Any, Union
+from collections.abc import Callable, Iterable, Mapping
 import re
 from urllib.parse import parse_qsl
 
@@ -52,14 +53,14 @@ from .service_type import SERVICE_TYPE_PYTHON_HTTP_CLIENT
 
 HeadersLike = Union[
     Mapping[str, Any],
-    Iterable[Tuple[Any, Any]],
+    Iterable[tuple[Any, Any]],
     "HeadersReader",
     "ASGIHeadersReader",
     None,
 ]
 
 
-def _headers_items_lower(headers: HeadersLike) -> Tuple[list, dict]:
+def _headers_items_lower(headers: HeadersLike) -> tuple[list, dict]:
     """Stringify a header mapping/iterable into ``(items, lower)``.
 
     ``items`` preserves original-case ``(key, value)`` pairs (for ``ForEach``);
@@ -72,7 +73,7 @@ def _headers_items_lower(headers: HeadersLike) -> Tuple[list, dict]:
     if headers is None:
         return items, lower
     if hasattr(headers, "items") and callable(headers.items):  # type: ignore[union-attr]
-        iterator: Iterable[Tuple[Any, Any]] = headers.items()  # type: ignore[union-attr]
+        iterator: Iterable[tuple[Any, Any]] = headers.items()  # type: ignore[union-attr]
     else:
         iterator = headers  # type: ignore[assignment]
     for k, v in iterator:
@@ -108,7 +109,7 @@ class DictHeaderReader(HeaderReader):
         self._lower = lower
         self._items = items
 
-    def get(self, key: str) -> Optional[str]:
+    def get(self, key: str) -> str | None:
         return self._lower.get(str(key).lower())
 
     def for_each(self, callback: Callable[[str, str], bool]) -> None:
@@ -154,7 +155,7 @@ class EnvironHeaderReader(HeaderReader):
     def __init__(self, environ: Mapping[str, Any]):
         self._environ = environ
 
-    def get(self, key: str) -> Optional[str]:
+    def get(self, key: str) -> str | None:
         ku = str(key).upper()
         if ku == "CONTENT-TYPE":
             environ_key = "CONTENT_TYPE"
@@ -201,7 +202,7 @@ class MultiDictHeaderReader(HeaderReader):
     def __init__(self, raw: Any):
         self._raw = raw
 
-    def get(self, key: str) -> Optional[str]:
+    def get(self, key: str) -> str | None:
         try:
             value = self._raw.get(str(key))
         except Exception:  # noqa: BLE001
@@ -251,21 +252,21 @@ class ASGIHeadersReader(HeaderReader):
 
     __slots__ = ("_raw", "_items", "_lower", "_get_count")
 
-    def __init__(self, headers: Iterable[Tuple[Any, Any]] = ()):
+    def __init__(self, headers: Iterable[tuple[Any, Any]] = ()):
         # ``scope["headers"]`` is already a list/tuple of (bytes, bytes) pairs, so
         # keep the reference; other iterables are materialized once so the raw
         # pairs survive re-scanning across ``get`` calls.
         if not headers:
-            self._raw: Iterable[Tuple[Any, Any]] = ()
+            self._raw: Iterable[tuple[Any, Any]] = ()
         elif isinstance(headers, (list, tuple)):
             self._raw = headers
         else:
             self._raw = tuple(headers)
-        self._items: Optional[list] = None
-        self._lower: Optional[dict] = None
+        self._items: list | None = None
+        self._lower: dict | None = None
         self._get_count = 0
 
-    def get(self, key: str) -> Optional[str]:
+    def get(self, key: str) -> str | None:
         lower_key = str(key).lower()
         if self._lower is not None:
             return self._lower.get(lower_key)
@@ -323,7 +324,7 @@ class ASGIHeadersReader(HeaderReader):
         return items
 
 
-def _latin1_lower_bytes(value: str) -> Optional[bytes]:
+def _latin1_lower_bytes(value: str) -> bytes | None:
     try:
         return value.encode("latin-1")
     except UnicodeEncodeError:
@@ -331,7 +332,7 @@ def _latin1_lower_bytes(value: str) -> Optional[bytes]:
 
 
 def _header_name_matches(raw_key: Any, lower_key: str,
-                         key_bytes: Optional[bytes]) -> bool:
+                         key_bytes: bytes | None) -> bool:
     if isinstance(raw_key, bytes):
         return (
             key_bytes is not None
@@ -406,7 +407,7 @@ def _has_pinpoint_key(keys: Iterable[Any]) -> bool:
 has_pinpoint_mapping = _has_pinpoint_key
 
 
-def has_pinpoint_pairs(pairs: Iterable[Tuple[Any, Any]]) -> bool:
+def has_pinpoint_pairs(pairs: Iterable[tuple[Any, Any]]) -> bool:
     """True if a sequence of ``(key, value)`` header pairs carries an upstream
     Pinpoint header.
 
@@ -466,7 +467,7 @@ def get_remote_addr(remote_addr: str) -> str:
 # Measured 2026-08-20: cache and a direct getattr chain land within tens of ns
 # of each other per request (each way round on different machines), so this
 # stays because removing it buys nothing, not because it measurably wins.
-_hdr_cfg_cache: Tuple[Any, dict] = (None, {})
+_hdr_cfg_cache: tuple[Any, dict] = (None, {})
 
 # Indices in the native SpanConfigSnapshot tuple the Agent fetches via
 # get_config_snapshot() (refreshed on config-revision change) and stamps on
@@ -530,7 +531,7 @@ def sql_trace_bind_values_enabled(target=None) -> bool:
     return _snapshot_gate("sql_trace_bind_values", target)
 
 
-def _header_recording_config(config_attr: str, target=None) -> Tuple[tuple, bool]:
+def _header_recording_config(config_attr: str, target=None) -> tuple[tuple, bool]:
     """Resolve one recording config list to ``(names, dump_all)``.
 
     ``names`` is the configured header/cookie allow-list (empty = recording
@@ -682,7 +683,7 @@ _DEFAULT_REAL_IP_HEADERS = ("X-Forwarded-For", "X-Real-Ip")
 _FORWARDED_FOR = re.compile(r'(?i:for)="?([^;,"]+)"?')
 
 
-def _real_ip_config(target=None) -> Tuple[tuple, str]:
+def _real_ip_config(target=None) -> tuple[tuple, str]:
     """Resolve ``(header names, placeholder)`` for one span.
 
     Snapshot first (``Http.Server.RealIpHeader`` / ``RealIpEmptyValue``, the
@@ -855,16 +856,18 @@ _PARAM_EACH_LIMIT = 64
 _PARAM_TOTAL_LIMIT = 512
 
 
+def _clip_param(text: str) -> str:
+    if len(text) > _PARAM_EACH_LIMIT:
+        return text[:_PARAM_EACH_LIMIT] + "..."
+    return text
+
+
 def format_request_params(query_string: str) -> str:
     """``k=v&k=v`` from a raw query string, with the caps above applied."""
     parts = []
     total = 0
     for key, value in parse_qsl(query_string, keep_blank_values=True):
-        if len(key) > _PARAM_EACH_LIMIT:
-            key = key[:_PARAM_EACH_LIMIT] + "..."
-        if len(value) > _PARAM_EACH_LIMIT:
-            value = value[:_PARAM_EACH_LIMIT] + "..."
-        item = f"{key}={value}"
+        item = f"{_clip_param(key)}={_clip_param(value)}"
         if total + len(item) + (1 if parts else 0) > _PARAM_TOTAL_LIMIT:
             parts.append("...")
             break
@@ -926,7 +929,7 @@ def trace_http_server_response(
     span,
     url_pattern: str,
     method: str,
-    status_code: Optional[int],
+    status_code: int | None,
     response_headers: HeadersLike = None,
 ) -> None:
     """Close-side server tracing: status, url_stat, response headers.
@@ -1002,7 +1005,7 @@ def trace_http_client_request(
 
 def trace_http_client_response(
     span_event,
-    status_code: Optional[int],
+    status_code: int | None,
     response_headers: HeadersLike = None,
 ) -> None:
     """Close-side client tracing: HTTP status annotation + response headers.

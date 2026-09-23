@@ -30,7 +30,7 @@ import itertools
 import operator
 import random
 import time
-from typing import Any, Optional, Self
+from typing import Any, Self
 
 from . import _native  # type: ignore[import-not-found]
 from . import callstack as _callstack
@@ -239,7 +239,7 @@ def _capped(value) -> str:
 
 
 def _error_name_message(error_or_name: Any,
-                        message: Optional[str]) -> tuple[str, str]:
+                        message: str | None) -> tuple[str, str]:
     """Normalize ``set_error`` for verdict-only paths.
 
     The one-string overload means ``SetError(message)`` in C++, whose error
@@ -318,7 +318,7 @@ def _as_ignored(ann: tuple) -> tuple:
     return (_ANN_IGNORED_ERROR,) + ann[1:]
 
 
-def _buffer_annotation(anns: Optional[list], ann: tuple) -> list:
+def _buffer_annotation(anns: list | None, ann: tuple) -> list:
     """Append ``ann`` to a per-span/event annotation buffer, enforcing
     ``_MAX_ANNOTATIONS``, and return the (possibly newly created) list.
 
@@ -424,10 +424,10 @@ class SpanEvent(_Annotatable):
 
     def __init__(
         self,
-        span: "Span",
+        span: Span,
         operation: str = "",
         service_type: int = SERVICE_TYPE_PYTHON_METHOD,
-        sequence: Optional[int] = 0,
+        sequence: int | None = 0,
         depth: int = 1,
     ):
         self._span = span
@@ -447,7 +447,7 @@ class SpanEvent(_Annotatable):
         # Span.end(). None until the first annotate_* so the common event
         # allocates no list. Overflow placeholders discard instead of
         # buffering — their record is dropped at _finalize anyway.
-        self._annotations: Optional[list] = (
+        self._annotations: list | None = (
             None if sequence is not None else _DISCARD_ANNOTATIONS)
         # Already normalized by the sole caller (Span.new_span_event).
         self._service_type = service_type
@@ -471,18 +471,18 @@ class SpanEvent(_Annotatable):
         self._async_seq = 0
 
     # ---- annotation helpers (shared ones live on _Annotatable) --------------
-    def set_operation_name(self, name: str) -> "SpanEvent":
+    def set_operation_name(self, name: str) -> SpanEvent:
         if not self._ended:
             self._operation_name = str(name)
         return self
 
-    def set_destination(self, dest: str) -> "SpanEvent":
+    def set_destination(self, dest: str) -> SpanEvent:
         if not self._ended:
             self._destination = str(dest)
         return self
 
-    def set_error(self, error_or_name: Any, message: Optional[str] = None,
-                  mark_error: bool = True) -> "SpanEvent":
+    def set_error(self, error_or_name: Any, message: str | None = None,
+                  mark_error: bool = True) -> SpanEvent:
         """Retain the error effect and replay it onto native at span end.
 
         For recording events, the call stack is captured *here* — ``frames_for``
@@ -543,7 +543,7 @@ class SpanEvent(_Annotatable):
         self._annotations = _buffer_annotation(self._annotations, ann)
         return self
 
-    def set_sql_query(self, sql: str, args: Any = "") -> "SpanEvent":
+    def set_sql_query(self, sql: str, args: Any = "") -> SpanEvent:
         """Record a SQL statement and its bound parameters on this event.
 
         ``args`` may be a list or tuple of ``None``, ``str``, ``bool``,
@@ -603,7 +603,7 @@ class SpanEvent(_Annotatable):
             return
         finish(self)
 
-    def _finalize(self, span: Optional["Span"], end_time: int) -> None:
+    def _finalize(self, span: Span | None, end_time: int) -> None:
         """Latch this event ended, buffer its completed record on ``span``,
         and drop the payload references.
 
@@ -634,7 +634,7 @@ class SpanEvent(_Annotatable):
         self._end_point = ""
 
     # ---- context-manager semantics (event scope) ---------------------------
-    def __enter__(self) -> "SpanEvent":
+    def __enter__(self) -> SpanEvent:
         return self
 
     def __exit__(self, exc_type, exc_val, tb) -> None:
@@ -697,13 +697,13 @@ class Span(_Annotatable):
         "_flags_str", "_inject_base", "_event_flush_size", "_logging",
     )
 
-    def __init__(self, native_span: "_native.Span",
+    def __init__(self, native_span: _native.Span,
                  collect_url_stat: bool = True,
                  async_task_span_timeout: float = 300.0,
                  flags: int = 0,
                  inject_base: tuple = (),
-                 trace_id: Optional[str] = None,
-                 span_id: Optional[int] = None,
+                 trace_id: str | None = None,
+                 span_id: int | None = None,
                  max_event_depth: int = _DEFAULT_MAX_EVENT_DEPTH,
                  max_event_sequence: int = _DEFAULT_MAX_EVENT_SEQUENCE,
                  config_snapshot: tuple = (),
@@ -725,12 +725,12 @@ class Span(_Annotatable):
         self._ended = False
         # One reset token per active ``with`` scope, so re-entry is safe.
         self._tokens: list[contextvars.Token] = []
-        self._annotations: Optional[list] = None
+        self._annotations: list | None = None
         # Identity, captured by Agent.new_span from the creation call's
         # return. Async children inherit the parent's values.
-        self._trace_id: Optional[str] = trace_id
-        self._span_id: Optional[int] = span_id
-        self._span_id_str: Optional[str] = None
+        self._trace_id: str | None = trace_id
+        self._span_id: int | None = span_id
+        self._span_id_str: str | None = None
         self._parent_span_id = int(parent_span_id)
         self._collect_url_stat = bool(collect_url_stat)
         self._async_task_span_timeout = max(
@@ -759,7 +759,7 @@ class Span(_Annotatable):
         self._enable_callstack_trace = bool(enable_callstack_trace)
         # Verdict-only errors from Python-side overflow placeholders. None on
         # the normal path, so a span that never overflows pays no list allocation.
-        self._error_verdicts: Optional[list] = None
+        self._error_verdicts: list | None = None
         # An async child may outlive the root object. Its error must reach the
         # shared root at set_error time, before the root can serialize PSpan;
         # ordinary/root spans safely batch the same verdict until their own end.
@@ -770,12 +770,12 @@ class Span(_Annotatable):
         self._flags_str = str(int(flags))
         self._inject_base = (inject_base if all(value for _, value in inject_base)
                              else tuple((key, value) for key, value in inject_base if value))
-        self._service_type: Optional[int] = None
-        self._remote_address: Optional[str] = None
-        self._end_point: Optional[str] = None
-        self._acceptor_host: Optional[str] = acceptor_host or None
-        self._status_code: Optional[int] = None
-        self._url_stat: Optional[tuple[str, str, int]] = None
+        self._service_type: int | None = None
+        self._remote_address: str | None = None
+        self._end_point: str | None = None
+        self._acceptor_host: str | None = acceptor_host or None
+        self._status_code: int | None = None
+        self._url_stat: tuple[str, str, int] | None = None
         # Set once the trace/span ids were written to an application log (see
         # set_logging); flushed at end().
         self._logging = False
@@ -845,12 +845,12 @@ class Span(_Annotatable):
             *(((HEADER_HOST, destination),) if destination else ()),
         )
 
-    def set_remote_address(self, address: str) -> "Span":
+    def set_remote_address(self, address: str) -> Span:
         if not self._ended:
             self._remote_address = str(address)
         return self
 
-    def set_end_point(self, endpoint: str) -> "Span":
+    def set_end_point(self, endpoint: str) -> Span:
         """The first non-empty endpoint wins.
 
         A transaction has one endpoint, and the outermost instrumentation is
@@ -868,18 +868,18 @@ class Span(_Annotatable):
             self._end_point = str(endpoint)
         return self
 
-    def set_acceptor_host(self, host: str) -> "Span":
+    def set_acceptor_host(self, host: str) -> Span:
         if not self._ended:
             self._acceptor_host = str(host)
         return self
 
-    def set_status_code(self, code: int) -> "Span":
+    def set_status_code(self, code: int) -> Span:
         if not self._ended:
             self._status_code = int(code)
         return self
 
-    def set_error(self, error_or_name: Any, message: Optional[str] = None,
-                  mark_error: bool = True) -> "Span":
+    def set_error(self, error_or_name: Any, message: str | None = None,
+                  mark_error: bool = True) -> Span:
         """Buffered like ``annotate_*`` and replayed onto native at :meth:`end`.
 
         ``mark_error=False`` records the error but leaves the transaction
@@ -901,7 +901,7 @@ class Span(_Annotatable):
         self._annotations = _buffer_annotation(self._annotations, ann)
         return self
 
-    def set_logging(self) -> "Span":
+    def set_logging(self) -> Span:
         """Mark this span as logged: its trace id and span id were written
         to an application log record.
 
@@ -915,14 +915,14 @@ class Span(_Annotatable):
         self._logging = True
         return self
 
-    def set_url_stat(self, url_pattern: str, method: str, status_code: int) -> "Span":
+    def set_url_stat(self, url_pattern: str, method: str, status_code: int) -> Span:
         if self._ended or not self._collect_url_stat:
             return self
         self._url_stat = (str(url_pattern) or "/NULL", str(method), int(status_code))
         return self
 
     def annotate_long_iibbs(self, key: int, long_value: int, int1: int,
-                            int2: int, byte1: int, byte2: int, s: str) -> "Span":
+                            int2: int, byte1: int, byte2: int, s: str) -> Span:
         """Composite long/int/int/byte/byte/string annotation — the
         ``ANNOTATION_HTTP_PROXY_HEADER`` payload shape (http_helper only)."""
         if self._ended:
@@ -1069,7 +1069,7 @@ class Span(_Annotatable):
                        len(finished), exc_info=True)
 
     # ---- async / background-work spans -------------------------------------
-    def new_async_span(self, operation: str) -> "Span":
+    def new_async_span(self, operation: str) -> Span:
         """Create an async child span linked to this span's current span event.
 
         The returned :class:`Span` is the handle the caller passes to a thread,
@@ -1132,7 +1132,7 @@ class Span(_Annotatable):
             event_flush_size=self._event_flush_size,
         )
 
-    def _fork_for_async_task(self, task: Any) -> Optional["Span"]:
+    def _fork_for_async_task(self, task: Any) -> Span | None:
         """Create the task-local span used for implicit ContextVar hand-off.
 
         A child asyncio task inherits the parent's ContextVar value, but it
@@ -1151,7 +1151,7 @@ class Span(_Annotatable):
             return self
 
         operation = "asyncio.task"
-        async_span: Optional[Span] = None
+        async_span: Span | None = None
         timeout_handle: Any = None
         try:
             with self.new_span_event(operation):
@@ -1161,7 +1161,7 @@ class Span(_Annotatable):
             # One-element ownership latch: whichever callback fires first takes
             # and ends the span, and the loser drops its strong reference.
             owned_span = [created]
-            grace_deadline: Optional[float] = None
+            grace_deadline: float | None = None
 
             def _finish(_task: Any = None) -> None:
                 nonlocal timeout_handle, grace_deadline
@@ -1207,7 +1207,7 @@ class Span(_Annotatable):
                     pass
             return None
 
-    def _detached_context_span(self) -> "Span":
+    def _detached_context_span(self) -> Span:
         """Return a native-free view for a Context copied to another thread.
 
         Keeping a non-None placeholder preserves nested-server deduplication,
@@ -1298,7 +1298,7 @@ class Span(_Annotatable):
         )
 
     # ---- context-manager semantics (root span scope) -----------------------
-    def __enter__(self) -> "Span":
+    def __enter__(self) -> Span:
         # Re-entrant: one token per scope, so nested ``with span:`` (or exiting
         # out of order) can't strand the contextvar on an ended span.
         self._tokens.append(_ctx.set_current_span(self))

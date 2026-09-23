@@ -426,7 +426,8 @@ def test_resolve_endpoint_v7_connection_pool():
 
 
 def test_resolve_endpoint_missing_returns_empty():
-    class _Bare: pass
+    class _Bare:
+        pass
     assert es_instr._resolve_endpoint(_Bare()) == ""
 
 

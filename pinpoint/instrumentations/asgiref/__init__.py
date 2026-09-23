@@ -36,7 +36,7 @@ token, which also erases anything asgiref's ``_restore_context`` copied back.
 from __future__ import annotations
 
 import contextvars
-from typing import Any, List, Optional
+from typing import Any
 
 from ...context import current_span
 from ...instrumentor import BaseInstrumentor
@@ -47,7 +47,7 @@ _OPERATION_SYNC_TO_ASYNC = "asgiref.sync_to_async"
 # One-element hand-off latch, published by the dispatching loop thread and claimed
 # by the worker in asgiref's copied context. Claiming mutates the list, never the
 # var, so _restore_context has no worker-side change to copy back.
-_handoff: contextvars.ContextVar[Optional[List[Any]]] = contextvars.ContextVar(
+_handoff: contextvars.ContextVar[list[Any] | None] = contextvars.ContextVar(
     "pinpoint_asgiref_handoff", default=None,
 )
 
@@ -88,7 +88,7 @@ async def _sync_to_async_call_wrapper(wrapped, instance, args, kwargs):
     if child is None:
         return await wrapped(*args, **kwargs)
 
-    latch: List[Any] = [child]
+    latch: list[Any] = [child]
     token = _handoff.set(latch)
     try:
         return await wrapped(*args, **kwargs)

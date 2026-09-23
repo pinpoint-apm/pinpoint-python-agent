@@ -31,7 +31,8 @@ consumed on another thread never carries the parent's event with it.
 from __future__ import annotations
 
 import functools
-from typing import Any, Callable, Iterable, Iterator
+from typing import Any
+from collections.abc import Callable, Iterable, Iterator
 
 from ...agent import get_agent
 from ...annotation import ANNOTATION_GRPC_CLIENT_STATUS, ANNOTATION_HTTP_URL
@@ -168,7 +169,7 @@ def _grpc_server_wrapper(wrapped, instance, args, kwargs):
     return wrapped(*new_args, **new_kwargs)
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def _grpc():
     import grpc  # type: ignore[import-not-found]
     return grpc
@@ -215,7 +216,10 @@ def _stream_with_server_span(
     token = set_current_span(span)
     event = _open_handler_event(span, method) if sampled else None
     try:
-        for item in make_iter():
+        # Not ``yield from``: that would delegate close()/throw() into the
+        # handler's iterator, and the cancel note above relies on this frame
+        # alone seeing them.
+        for item in make_iter():  # noqa: UP028
             yield item
     except BaseException as exc:
         if sampled and not _is_grpc_abort(exc, context):

@@ -31,7 +31,7 @@ import _thread
 import contextvars
 import sys
 import weakref
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .tracer import Span
@@ -42,7 +42,7 @@ class _SpanBinding:
 
     __slots__ = ("span", "thread_id", "task_ref", "detached")
 
-    def __init__(self, span: "Span", task: Any) -> None:
+    def __init__(self, span: Span, task: Any) -> None:
         self.span = span
         self.thread_id = _thread.get_ident()
         self.task_ref = weakref.ref(task) if task is not None else None
@@ -81,12 +81,12 @@ def _current_asyncio_task() -> Any:
     return _asyncio_current_task()
 
 
-_current_span: contextvars.ContextVar[Optional[_SpanBinding]] = contextvars.ContextVar(
+_current_span: contextvars.ContextVar[_SpanBinding | None] = contextvars.ContextVar(
     "pinpoint_current_span", default=None
 )
 
 
-def current_span() -> Optional["Span"]:
+def current_span() -> Span | None:
     """The innermost active Span in this execution context, or None."""
     binding = _current_span.get()
     if binding is None:
@@ -157,7 +157,7 @@ def current_span() -> Optional["Span"]:
     return child
 
 
-def _adopt_current_span() -> Optional["Span"]:
+def _adopt_current_span() -> Span | None:
     """Claim the inherited span for a framework's sequential child task.
 
     This deliberately bypasses :func:`current_span`'s async-task fork. It is a
@@ -189,9 +189,9 @@ class SpanActivation:
 
     __slots__ = ("_span", "_binding")
 
-    def __init__(self, span: "Span") -> None:
+    def __init__(self, span: Span) -> None:
         self._span = span
-        self._binding: Optional[_SpanBinding] = None
+        self._binding: _SpanBinding | None = None
 
     def set(self) -> contextvars.Token:
         binding = self._binding
@@ -201,7 +201,7 @@ class SpanActivation:
         return _current_span.set(binding)
 
 
-def set_current_span(span: Optional["Span"]) -> contextvars.Token:
+def set_current_span(span: Span | None) -> contextvars.Token:
     binding = None if span is None else _SpanBinding(
         span, _current_asyncio_task())
     return _current_span.set(binding)

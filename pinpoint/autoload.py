@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import os
 from importlib import import_module
-from typing import Callable, Dict
+from collections.abc import Callable
 
 import wrapt  # type: ignore[import-not-found]
 
@@ -38,7 +38,7 @@ from .errors import safe_try
 _log = get_logger("autoload")
 
 # target module -> dotted path "package:callable"
-_REGISTRY: Dict[str, str] = {
+_REGISTRY: dict[str, str] = {
     "flask.app": "pinpoint.instrumentations.flask:instrument",
     # Trigger after the concrete transport module has finished importing.
     # Hooking ``base`` fires while WSGIHandler/ASGIHandler may still be
@@ -100,7 +100,7 @@ _REGISTRY: Dict[str, str] = {
 # Short alias for the env var: the target's top-level package, case-folded. An
 # alias owning several transport hooks (django, redis, aiohttp) disables all of
 # them; a full module name opts out one. "aio-pika" folds to underscores.
-_ALIASES: Dict[str, set] = {}
+_ALIASES: dict[str, set] = {}
 for _module in _REGISTRY:
     _ALIASES.setdefault(_module.split(".")[0].lower(), set()).add(_module)
 

@@ -367,7 +367,7 @@ def test_reinstrument_does_not_register_second_listener(monkeypatch):
 
     registered = []
     fake_monitoring = types.ModuleType("pymongo.monitoring")
-    fake_monitoring.register = lambda listener: registered.append(listener)
+    fake_monitoring.register = registered.append
     fake_pymongo = types.ModuleType("pymongo")
     fake_pymongo.monitoring = fake_monitoring
     monkeypatch.setitem(sys.modules, "pymongo", fake_pymongo)

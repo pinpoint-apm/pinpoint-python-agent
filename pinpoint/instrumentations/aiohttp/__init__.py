@@ -89,7 +89,7 @@ _ROOT_SPAN_ACTIVE_KEY = "pinpoint.root_span_active"
 # *instances* the user owns (unlike the wrapt wrappers ``__wrapped__`` restores),
 # so they must be remembered to undo it on shutdown. A ``WeakSet`` never keeps a
 # route alive past the app's own lifetime.
-_traced_routes: "weakref.WeakSet" = weakref.WeakSet()
+_traced_routes: weakref.WeakSet = weakref.WeakSet()
 # WeakSet add/iterate are Python-level and not atomic against each other: the
 # loop thread registers routes while uninstrument (a signal handler, a test
 # thread) snapshots them. One small lock instead of retrying a RuntimeError.

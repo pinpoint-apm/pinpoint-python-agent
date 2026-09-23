@@ -24,7 +24,7 @@ import signal
 import sys
 import _thread
 import threading
-from typing import Mapping, Optional
+from collections.abc import Mapping
 
 from . import _native  # type: ignore[import-not-found]
 from . import callstack as _callstack
@@ -59,8 +59,8 @@ _log = get_logger("agent")
 
 # Reentrant so the SIGTERM handler can call shutdown() even when the signal lands
 # while the main thread is already inside a lock-holding init()/shutdown().
-_lock: "threading.RLock" = threading.RLock()
-_instance: Optional["Agent"] = None
+_lock: threading.RLock = threading.RLock()
+_instance: Agent | None = None
 # One-shot per process: re-registering per init/shutdown cycle would queue
 # redundant shutdown() calls (harmless — it is idempotent — but wasteful).
 _atexit_registered = False
@@ -172,9 +172,9 @@ class Agent:
                  "_server_info", "_collect_url_stat", "_async_task_span_timeout",
                  "_span_config", "_native_log_consumer", "_event_flush_size")
 
-    def __init__(self, native_agent: "_native.Agent", config: Config,
-                 server_info: Optional[str] = None,
-                 native_log_consumer: Optional[NativeLogConsumer] = None):
+    def __init__(self, native_agent: _native.Agent, config: Config,
+                 server_info: str | None = None,
+                 native_log_consumer: NativeLogConsumer | None = None):
         self._native = native_agent
         # The consumer owns the pybind bridge; its shared C++ queue is also
         # captured by AgentOptions.log_sink. Keep it alive until native
@@ -393,7 +393,7 @@ class Agent:
             pass
 
 
-def init(server_info: Optional[str] = None, **overrides) -> Agent:
+def init(server_info: str | None = None, **overrides) -> Agent:
     """Initialize the process-wide Pinpoint agent.
 
     Idempotent: subsequent calls return the already-initialized instance and
@@ -613,7 +613,7 @@ def _start_agent(cfg: Config, server_info: str) -> Agent:
         raise
 
 
-def _server_info_or_default(server_info: Optional[str]) -> str:
+def _server_info_or_default(server_info: str | None) -> str:
     return str(server_info or "") or _DEFAULT_SERVER_INFO
 
 
@@ -655,7 +655,7 @@ def _package_with_version(
 # process image — cache it so prefork workers (which re-run the native start
 # in _after_fork_reinit, including on gunicorn max_requests recycling) inherit
 # the master's scan through the forked globals instead of re-paying it.
-_top_level_distributions_cache: Optional[Mapping[str, list[str]]] = None
+_top_level_distributions_cache: Mapping[str, list[str]] | None = None
 
 
 def _top_level_distributions() -> Mapping[str, list[str]]:
@@ -901,7 +901,7 @@ def _after_fork_reinit() -> None:
     _instance = _NullAgent(cfg)
 
 
-def get_agent() -> Optional[Agent]:
+def get_agent() -> Agent | None:
     """Return the current agent instance, or None if `init()` wasn't called."""
     return _instance
 
@@ -926,7 +926,7 @@ class _NullAgent(Agent):  # type: ignore[misc]
     checks the flag and performs that worker's first ``StartAgent()`` call.
     """
 
-    def __init__(self, config: Config, server_info: Optional[str] = None,
+    def __init__(self, config: Config, server_info: str | None = None,
                  pending: bool = False):  # noqa: D401
         # Bypass Agent.__init__ which requires a native agent.
         object.__setattr__(self, "_native", None)
@@ -943,7 +943,7 @@ class _NullAgent(Agent):  # type: ignore[misc]
         return False
 
     def new_span(self, operation: str, rpc_point: str,
-                 headers: Optional[Mapping[str, str]] = None,
+                 headers: Mapping[str, str] | None = None,
                  method: str = "") -> Span:
         return _NullSpan()
 
@@ -1067,9 +1067,9 @@ class UnSampledSpan(_NullSpan):  # type: ignore[misc]
       ``Pinpoint-Sampled: s0`` downstream, built here without a native call.
     """
 
-    def __init__(self, native_span: "_native.Span",
+    def __init__(self, native_span: _native.Span,
                  collect_url_stat: bool = True,
-                 span_id: Optional[int] = None) -> None:
+                 span_id: int | None = None) -> None:
         # Runs on every unsampled request — see _NullSpan.__init__ on the minimal
         # field set. Adds the native handle, the lock serializing racing
         # end/inject, and the span identity captured at creation.

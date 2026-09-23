@@ -29,7 +29,6 @@ from __future__ import annotations
 import traceback
 from collections import deque
 from itertools import islice
-from typing import List, Optional, Tuple
 
 # Cap how many frames we ship per error: deep recursion would otherwise
 # inflate the span event payload. Both capture paths keep the frames nearest
@@ -37,7 +36,7 @@ from typing import List, Optional, Tuple
 _MAX_FRAMES = 64
 
 # Frame tuple shape used internally and across the native boundary.
-_Frame = Tuple[str, str, str, int]  # (module, function, file, line)
+_Frame = tuple[str, str, str, int]  # (module, function, file, line)
 
 # Total entries (thrown exception + causes) recorded per exception chain;
 # 0 = unlimited. Set from Config.exception_chain_max_depth at agent.init().
@@ -49,7 +48,7 @@ def set_chain_max_depth(depth: int) -> None:
     _chain_max_depth = max(0, int(depth))
 
 
-def _cause(exc: BaseException) -> Optional[BaseException]:
+def _cause(exc: BaseException) -> BaseException | None:
     # Python's own traceback rule: an explicit ``raise X from Y`` wins;
     # otherwise the implicit context unless ``raise X from None`` hid it.
     cause = exc.__cause__
@@ -58,7 +57,7 @@ def _cause(exc: BaseException) -> Optional[BaseException]:
     return cause
 
 
-def causes_for(exc: BaseException) -> Optional[List[Tuple[str, str, List[_Frame]]]]:
+def causes_for(exc: BaseException) -> list[tuple[str, str, list[_Frame]]] | None:
     """Dump the causes behind ``exc`` as ``(name, message, frames)`` entries,
     outermost first, for the chained native ``SetError``.
 
@@ -70,7 +69,7 @@ def causes_for(exc: BaseException) -> Optional[List[Tuple[str, str, List[_Frame]
     if cause is None:
         return None
     seen = {id(exc)}
-    causes: List[Tuple[str, str, List[_Frame]]] = []
+    causes: list[tuple[str, str, list[_Frame]]] = []
     limit = _chain_max_depth
     while cause is not None and id(cause) not in seen and (limit <= 0 or len(causes) + 1 < limit):
         seen.add(id(cause))
@@ -83,7 +82,7 @@ def causes_for(exc: BaseException) -> Optional[List[Tuple[str, str, List[_Frame]
     return causes or None
 
 
-def frames_for(error_or_name, *, enabled: bool) -> Optional[List[_Frame]]:
+def frames_for(error_or_name, *, enabled: bool) -> list[_Frame] | None:
     """Dump the call stack frames that describe this error.
 
     - If `error_or_name` is a `BaseException` with a non-None __traceback__,
@@ -119,7 +118,7 @@ def frames_for(error_or_name, *, enabled: bool) -> Optional[List[_Frame]]:
     return frames
 
 
-def _frames(walker) -> List[_Frame]:
+def _frames(walker) -> list[_Frame]:
     return [_describe(f, lineno) for f, lineno in islice(walker, _MAX_FRAMES)]
 
 

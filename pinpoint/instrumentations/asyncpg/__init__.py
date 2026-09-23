@@ -35,8 +35,6 @@ for the database name).
 
 from __future__ import annotations
 
-from typing import Tuple
-
 from ...context import current_span
 from ...errors import safe_try
 from ...instrumentor import BaseInstrumentor
@@ -149,7 +147,7 @@ def _resolve_connection_target(conn) -> TargetInfo:
     return TargetInfo(host=host, port=port, database=_connection_database(conn))
 
 
-def _connection_addr(conn) -> Tuple[str, int]:
+def _connection_addr(conn) -> tuple[str, int]:
     """asyncpg.Connection stores the resolved transport address on
     ``_addr`` as ``(host, port)`` for TCP or ``"/path"`` for Unix sockets."""
     addr = getattr(conn, "_addr", None)

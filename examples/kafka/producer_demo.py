@@ -53,7 +53,6 @@ Configurable:
 from __future__ import annotations
 
 import os
-from typing import Optional
 
 from flask import Flask, jsonify, request
 from kafka import KafkaProducer
@@ -62,7 +61,7 @@ BOOTSTRAP = os.environ.get("KAFKA_BOOTSTRAP", "localhost:9092")
 DEFAULT_TOPIC = os.environ.get("KAFKA_TOPIC", "demo.kafka-python")
 
 app = Flask("demo-kafka-producer")
-_producer: Optional[KafkaProducer] = None
+_producer: KafkaProducer | None = None
 
 
 def _get_producer() -> KafkaProducer:

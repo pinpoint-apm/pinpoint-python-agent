@@ -112,7 +112,8 @@ def test_extract_default_target_info_object_dbname_only():
 
 
 def test_extract_default_target_no_connection_returns_none():
-    class _NoConn: pass
+    class _NoConn:
+        pass
     assert dbapi_instr.extract_default_target(_NoConn()) is None
 
 

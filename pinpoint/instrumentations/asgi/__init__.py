@@ -27,7 +27,8 @@ See ``README.md`` for the full behavior list and the wrapping snippet.
 
 from __future__ import annotations
 
-from typing import Any, Awaitable, Callable, Dict
+from typing import Any
+from collections.abc import Awaitable, Callable
 
 from ..._log import get_logger
 from ...agent import get_agent
@@ -54,9 +55,9 @@ _DEFAULT_FRAMEWORK_NAME = "ASGI"
 # inside FastAPI) can't open a second root span for the same request.
 SCOPE_SPAN_ACTIVE_KEY = "pinpoint.root_span_active"
 
-Scope = Dict[str, Any]
-Receive = Callable[[], Awaitable[Dict[str, Any]]]
-Send = Callable[[Dict[str, Any]], Awaitable[None]]
+Scope = dict[str, Any]
+Receive = Callable[[], Awaitable[dict[str, Any]]]
+Send = Callable[[dict[str, Any]], Awaitable[None]]
 ASGIApp = Callable[[Scope, Receive, Send], Awaitable[None]]
 
 
@@ -165,7 +166,7 @@ async def _trace_asgi_request(app: ASGIApp, scope: Scope, receive: Receive,
     needs_status = sampled or getattr(span, "_collect_url_stat", False)
     send_fn: Any = send
     if needs_status:
-        async def _wrapped_send(message: Dict[str, Any]) -> None:
+        async def _wrapped_send(message: dict[str, Any]) -> None:
             nonlocal status_code, response_headers
             if message.get("type") == "http.response.start":
                 try:

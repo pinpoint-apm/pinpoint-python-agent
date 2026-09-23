@@ -16,7 +16,8 @@
 """The universal `safe_try` guard used by every instrumentation."""
 
 import functools
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
+from collections.abc import Callable
 
 from ._log import get_logger
 

@@ -30,7 +30,8 @@ from __future__ import annotations
 
 import os
 import threading
-from typing import Any, Callable, Dict, List, Type
+from typing import Any
+from collections.abc import Callable
 
 from ._log import get_logger
 from .errors import safe_try
@@ -38,7 +39,7 @@ from .errors import safe_try
 _log = get_logger("instrumentor")
 
 _global_lock = threading.RLock()
-_global_installed: Dict[Type["BaseInstrumentor"], "BaseInstrumentor"] = {}
+_global_installed: dict[type[BaseInstrumentor], BaseInstrumentor] = {}
 
 
 def _reset_lock_after_fork() -> None:
@@ -60,7 +61,7 @@ class BaseInstrumentor:
     def __init__(self) -> None:
         self._installed = False
         self._installing = False
-        self._wrapper_targets: List[tuple[str, str]] = []
+        self._wrapper_targets: list[tuple[str, str]] = []
 
     # ---- public API --------------------------------------------------------
     def instrument(self) -> None:

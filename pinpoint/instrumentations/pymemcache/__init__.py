@@ -33,7 +33,7 @@ socket path) and the cache key when relevant.
 
 from __future__ import annotations
 
-from typing import Iterable
+from collections.abc import Iterable
 
 from ...annotation import ANNOTATION_ARG0
 from ...context import current_span
@@ -177,9 +177,8 @@ def _join_keys(keys) -> str:
     rendered: list[str] = []
     total = 0
     for key in iterable:
-        if isinstance(key, (bytes, bytearray)):
-            key = key.decode("utf-8", "replace")
-        text = str(key)
+        text = (key.decode("utf-8", "replace")
+                if isinstance(key, (bytes, bytearray)) else str(key))
         rendered.append(text)
         # Stop once the cap is blown: a get_many with thousands of keys shouldn't
         # decode and join them all to keep 80 chars. ``total`` overestimates the join

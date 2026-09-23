@@ -24,7 +24,6 @@ types, and exception propagation.
 from __future__ import annotations
 
 import asyncio
-from typing import List
 
 import pytest
 
@@ -93,7 +92,7 @@ async def _noop():
 
 
 def test_middleware_opens_span_and_captures_status(fake_agent):
-    sent: List[dict] = []
+    sent: list[dict] = []
 
     async def app(scope, receive, send):
         await send({"type": "http.response.start", "status": 200, "headers": []})
@@ -191,7 +190,7 @@ class _FakeNullNative:
     ``UnSampledSpan.end`` calls on the native span."""
 
     def __init__(self):
-        self.url_stats: List[tuple] = []
+        self.url_stats: list[tuple] = []
         self.ended = False
 
     def set_url_stat(self, *args):

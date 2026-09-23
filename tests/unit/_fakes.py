@@ -35,7 +35,6 @@ Annotation entry shapes (``annotations.entries``):
 
 from __future__ import annotations
 
-from typing import List, Optional, Tuple
 
 from pinpoint.propagator import (HEADER_SAMPLED, HEADER_SPAN_ID,
                                  HEADER_TRACE_ID)
@@ -47,13 +46,13 @@ class Recorder:
     """Order-preserving log of span/event lifecycle tuples."""
 
     def __init__(self):
-        self.events: List[tuple] = []
-        self.last_async_native: Optional["FakeNativeSpan"] = None
+        self.events: list[tuple] = []
+        self.last_async_native: FakeNativeSpan | None = None
 
 
 class FakeAnnotation:
     def __init__(self):
-        self.entries: List[Tuple] = []
+        self.entries: list[tuple] = []
 
     def append_int(self, k, v):
         self.entries.append(("int", k, v))
@@ -80,8 +79,8 @@ class FakeNativeSpanEvent:
         self.destination = None
         self.endpoint = None
         self.next_span_id = None
-        self.errors: List[tuple] = []
-        self.sqls: List[tuple] = []
+        self.errors: list[tuple] = []
+        self.sqls: list[tuple] = []
         self.annotations = FakeAnnotation()
 
     def set_service_type(self, st):
@@ -128,10 +127,10 @@ class FakeNativeSpan:
         self.recorder = recorder if recorder is not None else Recorder()
         self.headers = headers
         self.sampled = sampled
-        self._events: List[FakeNativeSpanEvent] = []
-        self.all_events: List[FakeNativeSpanEvent] = []
-        self.errors: List[tuple] = []
-        self.url_stats: List[tuple] = []
+        self._events: list[FakeNativeSpanEvent] = []
+        self.all_events: list[FakeNativeSpanEvent] = []
+        self.errors: list[tuple] = []
+        self.url_stats: list[tuple] = []
         self.status_code = 0
         self.end_called = False
         self.service_type = None
@@ -304,10 +303,10 @@ class FakeAgent:
 
     def __init__(self, enabled=True):
         self.enabled = enabled
-        self.events: List[tuple] = []
-        self.native_spans: List[FakeNativeSpan] = []
-        self.last_native: Optional[FakeNativeSpan] = None
-        self.last_async_native: Optional[FakeNativeSpan] = None
+        self.events: list[tuple] = []
+        self.native_spans: list[FakeNativeSpan] = []
+        self.last_native: FakeNativeSpan | None = None
+        self.last_async_native: FakeNativeSpan | None = None
         self.last_method = ""
 
     def new_span(self, operation, rpc_point, headers=None, method=""):

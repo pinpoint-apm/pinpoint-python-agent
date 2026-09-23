@@ -51,7 +51,7 @@ from __future__ import annotations
 import json
 import os
 import re
-from typing import Any, Dict
+from typing import Any
 
 from pinpoint.instrumentations.asgi import PinpointASGIMiddleware
 
@@ -74,7 +74,7 @@ async def _send_json(send, status: int, body: dict) -> None:
     await send({"type": "http.response.body", "body": payload})
 
 
-async def app(scope: Dict[str, Any], receive, send) -> None:
+async def app(scope: dict[str, Any], receive, send) -> None:
     if scope["type"] != "http":
         return  # lifespan / websocket — Pinpoint middleware also passes through
 

@@ -69,7 +69,7 @@ import subprocess
 import sys
 import threading
 import time
-from typing import Callable, Dict, List, Optional, Sequence, Tuple
+from collections.abc import Callable, Sequence
 
 LATENCY_SAMPLE_EVERY = 16  # two clock reads per op would otherwise dominate
 
@@ -113,7 +113,7 @@ def assert_release_native(native_module) -> None:
 # ---------------------------------------------------------------------------
 
 
-def inbound_headers() -> Dict[str, str]:
+def inbound_headers() -> dict[str, str]:
     return {
         "Host": "bench.local:8080",
         "User-Agent": "pinpoint-api-overhead/1.0",
@@ -123,7 +123,7 @@ def inbound_headers() -> Dict[str, str]:
     }
 
 
-def unsampled_headers() -> Dict[str, str]:
+def unsampled_headers() -> dict[str, str]:
     from pinpoint import propagator
     headers = inbound_headers()
     # Carries an explicit unsampled decision so the agent takes the
@@ -136,7 +136,7 @@ def unsampled_headers() -> Dict[str, str]:
     return headers
 
 
-def sql_statement_pool(count: int) -> List[str]:
+def sql_statement_pool(count: int) -> list[str]:
     return [
         f"SELECT o.id, o.total, c.name FROM orders_{i}"
         " o JOIN customers c ON c.id = o.customer_id "
@@ -172,13 +172,13 @@ class Harness:
 
     def run_scenario(self, name: str, threads: int, ops_per_thread: int,
                      body: Callable[[int, int], None],
-                     records: bool = True) -> Optional[dict]:
+                     records: bool = True) -> dict | None:
         if self.only_scenario and name != self.only_scenario:
             return None
 
         ready = threading.Barrier(threads + 1)
         go = threading.Event()
-        per_thread: List[List[int]] = [[] for _ in range(threads)]
+        per_thread: list[list[int]] = [[] for _ in range(threads)]
 
         def worker(t: int) -> None:
             samples = per_thread[t]
@@ -229,7 +229,7 @@ class Harness:
             "p99": percentile(samples, 0.99),
         }
 
-    def emit(self, result: Optional[dict]) -> None:
+    def emit(self, result: dict | None) -> None:
         if not result:
             return
         print("RESULT\t{}\t{}\t{}\t{:.1f}\t{:.1f}\t{:.1f}\t{}".format(
@@ -416,7 +416,7 @@ def run_worker(args: argparse.Namespace) -> int:
                                     SERVICE_TYPE_PYTHON_HTTP_CLIENT)
         event.set_destination("downstream.local")
         event.set_end_point("downstream.local:8081")
-        outgoing: Dict[str, str] = {}
+        outgoing: dict[str, str] = {}
         for key, value in propagator.inject_items(span):
             outgoing[str(key)] = str(value)
         event.end()
@@ -487,7 +487,7 @@ def run_worker(args: argparse.Namespace) -> int:
 
 
 def spawn_worker(args: argparse.Namespace, variant: str,
-                 port: int) -> Dict[str, object]:
+                 port: int) -> dict[str, object]:
     """Run one variant in a child process and parse its TSV back."""
     cmd = [sys.executable, "-u", os.path.abspath(__file__),
            "--worker", "--variant", variant,
@@ -498,13 +498,13 @@ def spawn_worker(args: argparse.Namespace, variant: str,
     if args.scenario:
         cmd += ["--scenario", args.scenario]
     # stderr is inherited so the worker's own progress lines stay live.
-    proc = subprocess.run(cmd, stdout=subprocess.PIPE, text=True)
+    proc = subprocess.run(cmd, stdout=subprocess.PIPE, text=True, check=False)
     if proc.returncode != 0:
         raise SystemExit(f"[driver] {variant} worker failed "
                          f"(rc={proc.returncode})")
 
-    rows: List[dict] = []
-    raw: List[str] = []
+    rows: list[dict] = []
+    raw: list[str] = []
     peak_rss = 0
     created = 0
     for line in proc.stdout.splitlines():
@@ -541,15 +541,15 @@ def run_driver(args: argparse.Namespace) -> int:
           file=sys.stderr)
 
     # (name, threads) -> variant -> [ns_per_op per rep]; p50/p99 for "on" only.
-    order: List[Tuple[str, int]] = []
-    samples: Dict[Tuple[str, int], Dict[str, List[float]]] = {}
-    latency: Dict[Tuple[str, int], Dict[str, List[float]]] = {}
-    peak_rss: Dict[str, List[int]] = {"on": [], "off": []}
-    delivery: List[Tuple[int, int, int]] = []
+    order: list[tuple[str, int]] = []
+    samples: dict[tuple[str, int], dict[str, list[float]]] = {}
+    latency: dict[tuple[str, int], dict[str, list[float]]] = {}
+    peak_rss: dict[str, list[int]] = {"on": [], "off": []}
+    delivery: list[tuple[int, int, int]] = []
     # Every repetition's own rows, so an outlier in the min-max column can be
     # traced to one repetition (machine-level) or one scenario (noise). The
     # summary alone cannot tell those apart.
-    raw: List[str] = []
+    raw: list[str] = []
 
     try:
         for rep in range(1, args.repeats + 1):
@@ -634,7 +634,7 @@ def run_driver(args: argparse.Namespace) -> int:
     return 0
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)

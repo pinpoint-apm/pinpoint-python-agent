@@ -48,7 +48,6 @@ pytest.importorskip("grpc")
 pytest.importorskip("grpc_tools")
 
 import pinpoint
-from pinpoint import _native
 from pinpoint import agent as agent_mod
 from pinpoint import propagator
 from pinpoint.annotation import ANNOTATION_HTTP_REQUEST_HEADER, ANNOTATION_SQL_ID

@@ -43,7 +43,7 @@ from __future__ import annotations
 import itertools
 import threading
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from pinpoint.tracer import Span
 
@@ -63,11 +63,11 @@ _TAG_ERROR = 5  # (tag, message) | (tag, name, message[, cs]) — decoded into .
 _ids = itertools.count(1)
 
 
-def _decode_annotations(annotations) -> List[tuple]:
+def _decode_annotations(annotations) -> list[tuple]:
     """Normalize the buffered ``(tag, key, *values)`` tuples the tracer flushes
     at end() into ``("str"|"int"|"strstr"|"long", key, *values)`` — the same
     shape the unit-test fakes use, so assertions read identically."""
-    out: List[tuple] = []
+    out: list[tuple] = []
     for item in annotations or ():
         tag, key = item[0], item[1]
         out.append((_TAG_NAMES.get(tag, str(tag)), key) + tuple(item[2:]))
@@ -79,17 +79,17 @@ class RecordedEvent:
     """One span event, replayed from its completed record (see module doc)."""
     operation: str
     service_type: int
-    span: "RecordingNativeSpan"
+    span: RecordingNativeSpan
     destination: str = ""
     endpoint: str = ""
-    annotations: List[tuple] = field(default_factory=list)
-    sql: List[Tuple[str, str]] = field(default_factory=list)
-    error: Optional[tuple] = None
+    annotations: list[tuple] = field(default_factory=list)
+    sql: list[tuple[str, str]] = field(default_factory=list)
+    error: tuple | None = None
     next_span_id: int = 0
     ended: bool = False
 
     # -- assertion sugar ----------------------------------------------------
-    def ann(self, key: int) -> List[Any]:
+    def ann(self, key: int) -> list[Any]:
         """All annotation values recorded under ``key`` (any tag)."""
         return [a[2] for a in self.annotations if a[1] == key]
 
@@ -100,7 +100,7 @@ class RecordedSpan:
     ``end_span``."""
     operation: str
     rpc: str = ""
-    headers: Optional[Dict[str, str]] = None
+    headers: dict[str, str] | None = None
     trace_id: str = ""
     service_type: int = 0
     remote_address: str = ""
@@ -109,12 +109,12 @@ class RecordedSpan:
     status_code: int = 0
     url_pattern: str = ""
     method: str = ""
-    annotations: List[tuple] = field(default_factory=list)
-    error: Optional[tuple] = None
+    annotations: list[tuple] = field(default_factory=list)
+    error: tuple | None = None
     logging: bool = False
     ended: bool = False
 
-    def ann(self, key: int) -> List[Any]:
+    def ann(self, key: int) -> list[Any]:
         return [a[2] for a in self.annotations if a[1] == key]
 
 
@@ -123,13 +123,13 @@ class Recorder:
     creation order; ``spans`` collects root/async spans in creation order."""
 
     def __init__(self):
-        self.events: List[RecordedEvent] = []
-        self.spans: List[RecordedSpan] = []
+        self.events: list[RecordedEvent] = []
+        self.spans: list[RecordedSpan] = []
         self._lock = threading.Lock()
 
     # -- assertion sugar ----------------------------------------------------
     def events_named(self, operation: str,
-                     service_type: int = 0) -> List[RecordedEvent]:
+                     service_type: int = 0) -> list[RecordedEvent]:
         """Events with this operation name, optionally narrowed by service
         type — a gRPC client event and the server handler event it reaches
         both carry the RPC method as their name."""
@@ -149,7 +149,7 @@ class Recorder:
 class _Annotations:
     """`get_annotations()` surface — used by the http-server helper stubs."""
 
-    def __init__(self, sink: List[tuple]):
+    def __init__(self, sink: list[tuple]):
         self._sink = sink
 
     def append_int(self, key, value):
@@ -201,11 +201,11 @@ class RecordingNativeSpan:
     stubs touch. Root spans register a :class:`RecordedSpan` on the recorder."""
 
     def __init__(self, recorder: Recorder, operation: str = "it-root",
-                 rpc: str = "", headers: Optional[Dict[str, str]] = None):
+                 rpc: str = "", headers: dict[str, str] | None = None):
         self._recorder = recorder
         self._span_id = next(_ids)
         self._trace_id = f"it-agent^100^{self._span_id}"
-        self._open_events: List[RecordedEvent] = []
+        self._open_events: list[RecordedEvent] = []
         self.record = RecordedSpan(operation=operation, rpc=rpc,
                                    headers=headers, trace_id=self._trace_id)
         with recorder._lock:

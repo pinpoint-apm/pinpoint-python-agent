@@ -26,11 +26,9 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import threading
-from typing import List
 
 import pytest
 
-import pinpoint
 from pinpoint import context as ppctx
 from pinpoint.instrumentations import fastapi as fastapi_instr
 from pinpoint.propagator import inject_items
@@ -319,7 +317,7 @@ def test_fastapi_real_app_emits_exactly_one_span_per_request(monkeypatch):
 
     import pinpoint.agent  # local import to keep the optional-fastapi import clean
 
-    events: List[tuple] = []
+    events: list[tuple] = []
 
     class _Native:
         def __init__(self, op, rpc):
@@ -407,7 +405,7 @@ def test_fastapi_real_app_emits_exactly_one_span_per_request(monkeypatch):
     async def receive():
         return {"type": "http.request", "body": b"", "more_body": False}
 
-    sent: List[dict] = []
+    sent: list[dict] = []
 
     async def send(msg):
         sent.append(msg)

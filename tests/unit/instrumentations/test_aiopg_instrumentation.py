@@ -75,5 +75,6 @@ def test_extract_target_falls_back_to_underscore_conn():
 
 
 def test_extract_target_returns_none_without_connection():
-    class _Stub: pass
+    class _Stub:
+        pass
     assert aiopg_instr._extract_aiopg_target(_Stub()) is None

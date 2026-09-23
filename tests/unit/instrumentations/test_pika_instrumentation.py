@@ -758,8 +758,7 @@ def test_blocking_consume_generator_spans_each_delivery_with_active_span(
     ]
 
     def fake_consume(*_a, **_kw):
-        for d in deliveries:
-            yield d
+        yield from deliveries
 
     gen = pika_instr._blocking_consume_wrapper(
         fake_consume, instance=_FakeChannel(), args=("orders",), kwargs={},

@@ -33,7 +33,6 @@ stays delivery-only).
 from __future__ import annotations
 
 import functools
-from typing import Optional
 
 from ..._log import get_logger
 from ...agent import get_agent
@@ -372,7 +371,7 @@ def _open_consume_span(
     agent,
     message,
     broker,
-    batch_size: Optional[int] = None,
+    batch_size: int | None = None,
 ) -> None:
     open_consume_span(agent, *_message_fields(message), broker, batch_size)
 

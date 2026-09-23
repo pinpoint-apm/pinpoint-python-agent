@@ -28,13 +28,14 @@ Instrumentations call these — users rarely touch them directly.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Iterable, Mapping, Tuple
+from typing import TYPE_CHECKING
+from collections.abc import Iterable, Mapping
 
 if TYPE_CHECKING:
     from .tracer import Span
 
 
-def extract_pinpoint_headers(source) -> Dict[str, str]:
+def extract_pinpoint_headers(source) -> dict[str, str]:
     """Dump the Pinpoint propagation headers into ``{canonical-name: value}``.
 
     ``source`` is either a header ``Mapping`` (any key case — HTTP/2 and
@@ -42,7 +43,7 @@ def extract_pinpoint_headers(source) -> Dict[str, str]:
     readers (case-insensitive ``get``). A reader is asked only for the ten
     :data:`PINPOINT_HEADERS` names, so it stays lazy.
     """
-    extracted: Dict[str, str] = {}
+    extracted: dict[str, str] = {}
     if isinstance(source, Mapping):
         for key, value in source.items():
             name = PINPOINT_HEADERS_BY_LOWER.get(str(key).lower())
@@ -56,7 +57,7 @@ def extract_pinpoint_headers(source) -> Dict[str, str]:
     return extracted
 
 
-def inject_items(span: "Span") -> Iterable[Tuple[str, str]]:
+def inject_items(span: Span) -> Iterable[tuple[str, str]]:
     """Return the span's distributed-tracing headers as ``(key, value)`` pairs.
 
     Built wrapper-side by :meth:`pinpoint.tracer.Span.inject_context_items`

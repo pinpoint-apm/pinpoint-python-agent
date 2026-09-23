@@ -39,7 +39,7 @@ import tempfile
 import threading
 import time
 from concurrent import futures
-from typing import Callable, Dict, List, Optional, Tuple
+from collections.abc import Callable
 
 _here = os.path.dirname(os.path.abspath(__file__))
 _repo_root = os.path.dirname(os.path.dirname(_here))
@@ -49,7 +49,7 @@ PROTO_ROOT = os.path.join(
 )
 
 _stub_lock = threading.Lock()
-_stub_dir: Optional[str] = None
+_stub_dir: str | None = None
 
 
 def ensure_stubs() -> str:
@@ -93,7 +93,7 @@ def ensure_stubs() -> str:
         # macOS survives only thanks to two-level namespace linking.
         proc = subprocess.run(
             [sys.executable, "-m", "grpc_tools.protoc", *args],
-            capture_output=True, text=True,
+            capture_output=True, text=True, check=False,
         )
         if proc.returncode != 0:
             raise RuntimeError(
@@ -128,22 +128,22 @@ class MockCollector:
     def __init__(self) -> None:
         ensure_stubs()
         self._cond = threading.Condition()
-        self.agent_infos: List[Tuple[Dict[str, str], object]] = []
+        self.agent_infos: list[tuple[dict[str, str], object]] = []
         self.ping_count = 0
-        self.api_metas: List[object] = []
-        self.string_metas: List[object] = []
-        self.sql_metas: List[object] = []
-        self.sql_uid_metas: List[object] = []
-        self.exception_metas: List[object] = []
-        self.span_messages: List[object] = []
-        self.stat_messages: List[object] = []
+        self.api_metas: list[object] = []
+        self.string_metas: list[object] = []
+        self.sql_metas: list[object] = []
+        self.sql_uid_metas: list[object] = []
+        self.exception_metas: list[object] = []
+        self.span_messages: list[object] = []
+        self.stat_messages: list[object] = []
         self._server = None
-        self.port: Optional[int] = None
+        self.port: int | None = None
 
     # ------------------------------------------------------------------
     # lifecycle
     # ------------------------------------------------------------------
-    def start(self) -> "MockCollector":
+    def start(self) -> MockCollector:
         import grpc
 
         from v1 import Service_pb2_grpc as svc
@@ -202,18 +202,18 @@ class MockCollector:
                     raise AssertionError(f"timed out waiting for {what}")
                 self._cond.wait(remaining)
 
-    def spans(self) -> List[object]:
+    def spans(self) -> list[object]:
         """All received root/continued spans (PSpan), in arrival order."""
         with self._cond:
             return [m.span for m in self.span_messages if m.HasField("span")]
 
-    def span_chunks(self) -> List[object]:
+    def span_chunks(self) -> list[object]:
         """All received async-span chunks (PSpanChunk), in arrival order."""
         with self._cond:
             return [m.spanChunk for m in self.span_messages
                     if m.HasField("spanChunk")]
 
-    def spans_with_rpc(self, rpc: str) -> List[object]:
+    def spans_with_rpc(self, rpc: str) -> list[object]:
         return [s for s in self.spans() if s.acceptEvent.rpc == rpc]
 
     def wait_span(self, rpc: str, timeout: float = 20.0):

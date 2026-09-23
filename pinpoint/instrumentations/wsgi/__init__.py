@@ -38,7 +38,8 @@ The middleware:
 from __future__ import annotations
 
 import weakref
-from typing import Any, Callable, Dict, Iterable, Mapping, Tuple
+from typing import Any
+from collections.abc import Callable, Iterable, Mapping
 
 from ..._log import get_logger
 from ...agent import get_agent
@@ -71,7 +72,7 @@ _OPERATION_RESPONSE_STREAM = "wsgi.response.iteration"
 ENVIRON_SPAN_ACTIVE_KEY = "pinpoint.root_span_active"
 
 StartResponse = Callable[..., Any]
-WSGIApp = Callable[[Dict[str, Any], StartResponse], Iterable[bytes]]
+WSGIApp = Callable[[dict[str, Any], StartResponse], Iterable[bytes]]
 
 
 class PinpointWSGIMiddleware:
@@ -93,7 +94,7 @@ class PinpointWSGIMiddleware:
         # the application callable, resolved once rather than per request.
         self._entry_event = callable_operation_name(app, default="wsgi.app")
 
-    def __call__(self, environ: Dict[str, Any],
+    def __call__(self, environ: dict[str, Any],
                  start_response: StartResponse) -> Iterable[bytes]:
         return _trace_wsgi_request(
             self._app, environ, start_response, self._operation,
@@ -101,7 +102,7 @@ class PinpointWSGIMiddleware:
         )
 
 
-def _trace_wsgi_request(app: WSGIApp, environ: Dict[str, Any],
+def _trace_wsgi_request(app: WSGIApp, environ: dict[str, Any],
                         start_response: StartResponse,
                         operation: str,
                         entry_event: str = "") -> Iterable[bytes]:
@@ -299,7 +300,7 @@ def _annotate_request(span, environ: Mapping[str, Any],
 
 @safe_try
 def _end_span(span, environ: Mapping[str, Any], status_code: int,
-              response_headers: Iterable[Tuple[str, str]] = (),
+              response_headers: Iterable[tuple[str, str]] = (),
               sampled: bool = True) -> None:
     method = environ.get("REQUEST_METHOD", "") or ""
     # Prefer a route template if a framework-specific layer stashed one.

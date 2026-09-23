@@ -67,9 +67,10 @@ GROUP = os.environ.get("KAFKA_GROUP", "demo.confluent-kafka.consumer")
 @pinpoint.spanevent("consumer.process")
 def _process(message: Any) -> None:
     headers = {}
-    for key, value in (message.headers() or []):
-        if isinstance(value, (bytes, bytearray)):
-            value = value.decode("utf-8", errors="replace")
+    for key, raw in (message.headers() or []):
+        value = raw
+        if isinstance(raw, (bytes, bytearray)):
+            value = raw.decode("utf-8", errors="replace")
         headers[key] = value
     payload = message.value()
     if isinstance(payload, (bytes, bytearray)):

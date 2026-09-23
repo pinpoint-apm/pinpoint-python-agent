@@ -43,7 +43,8 @@ import reprlib
 import sys
 import weakref
 from collections.abc import Mapping
-from typing import Any, Callable, Optional
+from typing import Any
+from collections.abc import Callable
 
 import wrapt  # type: ignore[import-not-found]
 
@@ -80,7 +81,7 @@ def agent_disabled() -> bool:
 
 
 def _with_precheck(inner: Callable[..., Any],
-                   precheck: Optional[Callable[[], bool]]) -> Callable[..., Any]:
+                   precheck: Callable[[], bool] | None) -> Callable[..., Any]:
     """Route straight to the unwrapped target when ``precheck()`` says tracing
     is definitely off for this call — skipping the safe_wrapper machinery (its
     sentinel allocation and extra frames) on the no-tracing hot path. Same
@@ -106,7 +107,7 @@ def _with_precheck(inner: Callable[..., Any],
 
 
 def safe_wrapper(fn: Callable[..., Any],
-                 precheck: Optional[Callable[[], bool]] = None,
+                 precheck: Callable[[], bool] | None = None,
                  ) -> Callable[..., Any]:
     """Defensive wrap around an instrumentation callback.
 
@@ -314,7 +315,7 @@ def already_wrapped(module: str, target: str) -> bool:
 
 
 def wrap(module: str, target: str, wrapper: Callable[..., Any],
-         precheck: Optional[Callable[[], bool]] = None) -> bool:
+         precheck: Callable[[], bool] | None = None) -> bool:
     """Install a wrapt wrapper on ``module.target`` guarded by ``safe_wrapper``.
 
     ``precheck`` (see :func:`no_current_span` / :func:`agent_disabled`) makes
@@ -477,7 +478,7 @@ def http_client_instrumentation_suppressed() -> bool:
 sql_bind_values_enabled = _http_helper.sql_trace_bind_values_enabled
 
 
-def inject_http_headers(span: Optional[Span], headers: Any) -> None:
+def inject_http_headers(span: Span | None, headers: Any) -> None:
     """Inject trace headers into a private per-send header mapping.
 
     Callers must pass headers from :func:`copy_http_request`; mutating a shared
@@ -539,7 +540,7 @@ def copy_http_request(request: Any) -> Any:
         return None
 
 
-def request_with_trace_headers(span: Optional[Span], request: Any) -> Any:
+def request_with_trace_headers(span: Span | None, request: Any) -> Any:
     """Prepare an isolated request for one traced send, without raising."""
     request_copy = copy_http_request(request)
     if request_copy is None:
@@ -620,7 +621,7 @@ def rebind_http_response_request(response, original, sent) -> None:
         pass
 
 
-def span_is_sampled(span: Optional[Span]) -> bool:
+def span_is_sampled(span: Span | None) -> bool:
     """Return False only when the span explicitly says it is unsampled."""
     if span is None:
         return False
@@ -864,7 +865,7 @@ def reclaim_handoff(latch) -> None:
     end_quietly(claim_handoff(latch))
 
 
-def record_exception_on_span(span: Optional[Span], exc: BaseException) -> None:
+def record_exception_on_span(span: Span | None, exc: BaseException) -> None:
     if span is None or not isinstance(exc, Exception):
         return
     try:
@@ -918,7 +919,7 @@ def memoize_on(obj, attr: str, resolve, *args):
     return value
 
 
-def _format_endpoint(connection, resolve) -> Optional[str]:
+def _format_endpoint(connection, resolve) -> str | None:
     try:
         host, port = resolve(connection)
     except Exception:  # noqa: BLE001
@@ -928,7 +929,7 @@ def _format_endpoint(connection, resolve) -> Optional[str]:
     return f"{host}:{port}" if port else str(host)
 
 
-def cached_endpoint(connection, resolve) -> Optional[str]:
+def cached_endpoint(connection, resolve) -> str | None:
     """``host:port`` of ``connection``, memoized on it (see :func:`memoize_on`).
     ``resolve(connection)`` returns ``(host, port)``; a failing resolver
     yields ``None``."""

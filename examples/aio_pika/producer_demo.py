@@ -62,7 +62,6 @@ from __future__ import annotations
 
 import os
 from contextlib import asynccontextmanager
-from typing import Optional
 
 import aio_pika
 import uvicorn
@@ -74,9 +73,9 @@ RABBITMQ_URL = os.environ.get(
 EXCHANGE = os.environ.get("RABBITMQ_EXCHANGE", "demo.aio_pika.exchange")
 DEFAULT_QUEUE = os.environ.get("RABBITMQ_QUEUE", "demo.aio_pika")
 
-_connection: Optional[aio_pika.abc.AbstractRobustConnection] = None
-_channel: Optional[aio_pika.abc.AbstractRobustChannel] = None
-_exchange: Optional[aio_pika.abc.AbstractExchange] = None
+_connection: aio_pika.abc.AbstractRobustConnection | None = None
+_channel: aio_pika.abc.AbstractRobustChannel | None = None
+_exchange: aio_pika.abc.AbstractExchange | None = None
 
 
 @asynccontextmanager

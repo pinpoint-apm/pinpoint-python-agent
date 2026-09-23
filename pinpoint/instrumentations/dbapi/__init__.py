@@ -36,7 +36,8 @@ cursor class and calls ``wrap_cursor_class`` for it.
 from __future__ import annotations
 
 import contextvars
-from typing import Any, Callable, Optional
+from typing import Any
+from collections.abc import Callable
 
 from ..._log import get_logger
 from ...context import current_span
@@ -127,7 +128,7 @@ def wrap_cursor_class(
     cursor_qualname: str,
     *,
     service_type: int,
-    extract_target: Optional[Callable[[Any], Optional["TargetInfo"]]] = None,
+    extract_target: Callable[[Any], TargetInfo | None] | None = None,
 ) -> None:
     """Install ``execute`` / ``executemany`` / ``callproc`` wrappers on
     ``module.cursor_qualname`` (e.g. ``"pymysql.cursors", "Cursor"``).
@@ -155,7 +156,7 @@ def wrap_async_cursor_class(
     cursor_qualname: str,
     *,
     service_type: int,
-    extract_target: Optional[Callable[[Any], Optional["TargetInfo"]]] = None,
+    extract_target: Callable[[Any], TargetInfo | None] | None = None,
 ) -> None:
     """Same as :func:`wrap_cursor_class` but produces async wrappers — the
     coroutine ``cursor.execute()`` shape used by aiopg/aiomysql.
@@ -440,7 +441,7 @@ def _params_may_be_large(params) -> bool:
 
 # ---- Connection target extractors -------------------------------------------
 
-def _default_extract_target(cursor) -> Optional[TargetInfo]:
+def _default_extract_target(cursor) -> TargetInfo | None:
     """Best-effort PEP-249 connection inspection: most drivers stash
     ``self.connection`` (DB-API attr) or ``self._connection`` and expose
     ``host``/``port``/``database`` on it."""

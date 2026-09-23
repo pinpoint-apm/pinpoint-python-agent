@@ -39,7 +39,7 @@ import difflib
 import json
 import os
 from dataclasses import dataclass, field, fields
-from typing import Any, Dict, List
+from typing import Any
 
 from ._log import get_logger
 from .service_type import APP_TYPE_PYTHON
@@ -128,9 +128,9 @@ class Config:
     # `name`; match_cause also matches the __cause__/__context__ chain. Both
     # default False and are stripped before the native YAML is rendered (see
     # to_yaml / tracer.set_ignore_rules).
-    span_ignore_errors: List[Dict[str, Any]] = field(default_factory=list)
-    span_error_mark: List[str] = field(default_factory=list)
-    span_error_mark_exclude: List[str] = field(default_factory=list)
+    span_ignore_errors: list[dict[str, Any]] = field(default_factory=list)
+    span_error_mark: list[str] = field(default_factory=list)
+    span_error_mark_exclude: list[str] = field(default_factory=list)
     span_batch_size: int = 20
     span_batch_flush_interval_ms: int = 1000
     span_batch_collect_deadline_ms: int = 500
@@ -152,7 +152,7 @@ class Config:
     # Real-IP resolution: headers are tried in order and the first non-empty
     # value that is not the placeholder wins; [] trusts no header (socket
     # address). Resolved per span from the snapshot, same as the gates above.
-    http_server_real_ip_header: List[str] = field(
+    http_server_real_ip_header: list[str] = field(
         default_factory=lambda: ["X-Forwarded-For", "X-Real-Ip"])
     http_server_real_ip_empty_value: str = ""
 
@@ -171,19 +171,19 @@ class Config:
 
     # ---- HTTP server filters -----------------------------------------------
     # Status codes to mark as errored. Values are like "5xx", "404", etc.
-    http_server_status_code_errors: List[str] = field(default_factory=lambda: ["5xx"])
-    http_server_exclude_url: List[str] = field(default_factory=list)
-    http_server_exclude_method: List[str] = field(default_factory=list)
-    http_server_record_request_header: List[str] = field(default_factory=list)
-    http_server_record_request_cookie: List[str] = field(default_factory=list)
-    http_server_record_response_header: List[str] = field(default_factory=list)
-    http_server_proxy_user_header_names: List[str] = field(default_factory=list)
+    http_server_status_code_errors: list[str] = field(default_factory=lambda: ["5xx"])
+    http_server_exclude_url: list[str] = field(default_factory=list)
+    http_server_exclude_method: list[str] = field(default_factory=list)
+    http_server_record_request_header: list[str] = field(default_factory=list)
+    http_server_record_request_cookie: list[str] = field(default_factory=list)
+    http_server_record_response_header: list[str] = field(default_factory=list)
+    http_server_proxy_user_header_names: list[str] = field(default_factory=list)
     http_server_proxy_header_enable: bool = True
 
     # ---- HTTP client recording --------------------------------------------
-    http_client_record_request_header: List[str] = field(default_factory=list)
-    http_client_record_request_cookie: List[str] = field(default_factory=list)
-    http_client_record_response_header: List[str] = field(default_factory=list)
+    http_client_record_request_header: list[str] = field(default_factory=list)
+    http_client_record_request_cookie: list[str] = field(default_factory=list)
+    http_client_record_response_header: list[str] = field(default_factory=list)
 
     # ---- SQL ---------------------------------------------------------------
     sql_max_bind_args_size: int = 1024
@@ -216,7 +216,7 @@ class Config:
     # Native configuration source controls. Profiles use the native YAML keys.
     enable_config_file_watcher: bool = False
     active_profile: str = ""
-    profiles: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    profiles: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     # Escape hatch for a native key not declared here.
     extra_yaml: str = ""
@@ -231,7 +231,7 @@ class Config:
     prefork: bool = False
 
     @classmethod
-    def from_kwargs(cls, **overrides) -> "Config":
+    def from_kwargs(cls, **overrides) -> Config:
         """Build a Config from ``init()`` kwargs.
 
         Unknown keys are ignored, so an ``init()`` typo degrades to defaults
@@ -273,7 +273,7 @@ class Config:
         # coercions below raise a clear Python error rather than shipping a mistyped
         # scalar to the native parser.
         strs = lambda items: [str(item) for item in items]  # noqa: E731
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             "ApplicationName": str(self.application_name),
             "AgentName": str(self.agent_name),
             "UidVersion": str(self.uid_version),
@@ -512,7 +512,7 @@ def apply_native_env_overrides(cfg: Config) -> Config:
     return cfg
 
 
-def _yaml_lines(mapping: Dict[str, Any], indent: int = 0) -> List[str]:
+def _yaml_lines(mapping: dict[str, Any], indent: int = 0) -> list[str]:
     """Render a nested dict as block-mapping YAML lines.
 
     Scalars and lists are serialized with ``json.dumps``: JSON scalars and
@@ -521,7 +521,7 @@ def _yaml_lines(mapping: Dict[str, Any], indent: int = 0) -> List[str]:
     explicit ``[]`` native needs to clear stale values on reload.
     """
     pad = "  " * indent
-    lines: List[str] = []
+    lines: list[str] = []
     for key, value in mapping.items():
         if isinstance(value, dict):
             lines.append(f"{pad}{key}:")

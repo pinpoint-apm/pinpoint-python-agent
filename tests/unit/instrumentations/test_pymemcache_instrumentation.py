@@ -154,5 +154,6 @@ def test_server_endpoint_renders_unix_socket():
 
 
 def test_server_endpoint_handles_no_server():
-    class _Stub: pass
+    class _Stub:
+        pass
     assert pymemcache_instr._server_endpoint(_Stub()) == ""

@@ -56,7 +56,6 @@ from __future__ import annotations
 
 import os
 from contextlib import asynccontextmanager
-from typing import Optional
 
 import uvicorn
 from aiokafka import AIOKafkaProducer
@@ -65,7 +64,7 @@ from fastapi import FastAPI
 BOOTSTRAP = os.environ.get("KAFKA_BOOTSTRAP", "localhost:9092")
 DEFAULT_TOPIC = os.environ.get("KAFKA_TOPIC", "demo.aiokafka")
 
-_producer: Optional[AIOKafkaProducer] = None
+_producer: AIOKafkaProducer | None = None
 
 
 @asynccontextmanager

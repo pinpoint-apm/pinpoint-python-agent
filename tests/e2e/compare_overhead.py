@@ -86,7 +86,6 @@ import time
 import urllib.error
 import urllib.request
 from pathlib import Path
-from typing import Dict, List, Optional
 
 import psutil
 
@@ -136,16 +135,16 @@ def _wait_for_agent(port: int, timeout: float = 30.0) -> None:
         "measurement would understate its overhead")
 
 
-def _fetch_stats(port: int) -> Dict[str, float]:
+def _fetch_stats(port: int) -> dict[str, float]:
     return get_json(ServerAddress("http", "127.0.0.1", port, "/"), "/stats", 2.0)
 
 
-def _start(script: Path, env: Dict[str, str],
-           profile_out: Optional[Path] = None) -> subprocess.Popen:
+def _start(script: Path, env: dict[str, str],
+           profile_out: Path | None = None) -> subprocess.Popen:
     """Launch the server. When ``profile_out`` is set, run under
     ``python -m cProfile -o <path>`` so the .prof file is written on clean
     interpreter shutdown (which we trigger via SIGINT in ``_stop``)."""
-    cmd: List[str] = [str(VENV_PYTHON), "-u"]
+    cmd: list[str] = [str(VENV_PYTHON), "-u"]
     if profile_out is not None:
         cmd += ["-m", "cProfile", "-o", str(profile_out)]
     cmd.append(str(script))
@@ -157,7 +156,7 @@ def _start(script: Path, env: Dict[str, str],
     )
 
 
-def _stop(p: Optional[subprocess.Popen], timeout: float = 10.0) -> None:
+def _stop(p: subprocess.Popen | None, timeout: float = 10.0) -> None:
     """Send SIGINT (Ctrl+C) so uvicorn's signal handler can run the ASGI
     lifecycle shutdown and Python's atexit fires — required for cProfile's
     on-exit dump. Fall back to SIGTERM then SIGKILL on timeout.
@@ -201,8 +200,8 @@ class _Sampler(threading.Thread):
         self.pid = pid
         self.interval = interval
         self._stop = threading.Event()
-        self.cpu: List[float] = []
-        self.rss_mb: List[float] = []
+        self.cpu: list[float] = []
+        self.rss_mb: list[float] = []
 
     def run(self) -> None:
         try:
@@ -229,7 +228,7 @@ class _Sampler(threading.Thread):
 
 def run_variant(label: str, args: argparse.Namespace, *,
                 with_pinpoint: bool,
-                profile_out: Optional[Path] = None) -> Dict[str, object]:
+                profile_out: Path | None = None) -> dict[str, object]:
     env = os.environ.copy()
     env["PORT"] = str(args.port)
     env["HOST"] = "127.0.0.1"
@@ -323,7 +322,7 @@ def _delta_pct(base: float, new: float) -> str:
     return f"{sign}{d:6.1f}%"
 
 
-def print_report(off: Dict[str, object], on: Dict[str, object], args: argparse.Namespace) -> None:
+def print_report(off: dict[str, object], on: dict[str, object], args: argparse.Namespace) -> None:
     bar = "=" * 70
     print()
     print(bar)
@@ -389,7 +388,7 @@ def print_report(off: Dict[str, object], on: Dict[str, object], args: argparse.N
 # ---------------------------------------------------------------------------
 
 
-def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap = argparse.ArgumentParser(
         description="Compare it_test_server CPU/RSS with vs without Pinpoint.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -425,7 +424,7 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
 
 
 def _start_grpc_backend(args: argparse.Namespace, *,
-                        with_pinpoint: bool) -> Optional[subprocess.Popen]:
+                        with_pinpoint: bool) -> subprocess.Popen | None:
     """Start the gRPC half with the same Pinpoint state as its HTTP variant."""
     if args.mode not in GRPC_MODES:
         return None
@@ -448,7 +447,7 @@ def _start_grpc_backend(args: argparse.Namespace, *,
 
 def _run_variant_with_backend(label: str, args: argparse.Namespace, *,
                               with_pinpoint: bool,
-                              profile_out: Optional[Path]) -> Dict[str, object]:
+                              profile_out: Path | None) -> dict[str, object]:
     grpc_server = _start_grpc_backend(args, with_pinpoint=with_pinpoint)
     try:
         return run_variant(
@@ -461,8 +460,8 @@ def _run_variant_with_backend(label: str, args: argparse.Namespace, *,
 def main() -> int:
     args = parse_args()
 
-    profile_off: Optional[Path] = None
-    profile_on: Optional[Path] = None
+    profile_off: Path | None = None
+    profile_on: Path | None = None
     if args.profile:
         pdir = Path(args.profile_dir)
         pdir.mkdir(parents=True, exist_ok=True)

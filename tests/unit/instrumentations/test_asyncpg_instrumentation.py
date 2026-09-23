@@ -251,7 +251,8 @@ def test_connection_addr_handles_unix_socket_string():
 
 
 def test_connection_addr_handles_missing():
-    class _Conn: pass
+    class _Conn:
+        pass
     assert asyncpg_instr._connection_addr(_Conn()) == ("", 0)
 
 
@@ -260,5 +261,6 @@ def test_connection_database_reads_from_params():
 
 
 def test_connection_database_handles_missing_params():
-    class _Conn: pass
+    class _Conn:
+        pass
     assert asyncpg_instr._connection_database(_Conn()) == ""

@@ -457,7 +457,7 @@ def test_async_trace_ends_orphan_span_when_handoff_block_raises():
     token = ppctx.set_current_span(root)
     try:
         try:
-            with pinpoint.async_trace("background") as async_span:
+            with pinpoint.async_trace("background"):
                 # Caller blew up before passing async_span to a worker.
                 raise RuntimeError("hand-off failed")
         except RuntimeError:

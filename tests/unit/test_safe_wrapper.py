@@ -95,7 +95,7 @@ def test_post_call_instrumentation_bug_returns_target_result():
         return 42
 
     def wrapper(wrapped, instance, args, kwargs):
-        result = wrapped(*args, **kwargs)
+        wrapped(*args, **kwargs)
         raise RuntimeError("bug while recording the span after the call")
 
     call = _install(wrapper)

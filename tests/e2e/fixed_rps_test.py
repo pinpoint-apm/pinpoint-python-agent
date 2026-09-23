@@ -27,7 +27,7 @@ import threading
 import time
 from collections import Counter
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Sequence, Tuple
+from collections.abc import Sequence
 from urllib.parse import urlsplit
 
 
@@ -37,7 +37,7 @@ class Endpoint:
     expected_status: int = 200
 
 
-WORKLOADS: Dict[str, Tuple[Endpoint, ...]] = {
+WORKLOADS: dict[str, tuple[Endpoint, ...]] = {
     "simple": (Endpoint("/simple"),),
     "deep": (
         Endpoint("/deep?depth=10"),
@@ -249,9 +249,9 @@ class Results:
     def record_completed(
         self,
         latency_seconds: float,
-        status: Optional[int],
+        status: int | None,
         expected_status: int,
-        error: Optional[str],
+        error: str | None,
     ) -> None:
         with self.lock:
             self.completed += 1
@@ -276,7 +276,7 @@ class Results:
         with self.lock:
             self.dropped[reason] += 1
 
-    def snapshot(self) -> Tuple[int, int, int]:
+    def snapshot(self) -> tuple[int, int, int]:
         with self.lock:
             return self.started, self.completed, sum(self.dropped.values())
 
@@ -408,7 +408,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         server = parse_server_address(args.base_url)

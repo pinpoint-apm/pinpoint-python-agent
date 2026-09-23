@@ -35,7 +35,7 @@ from __future__ import annotations
 import copy
 import functools
 import inspect
-from typing import Any, Optional, Tuple
+from typing import Any
 
 from ...agent import get_agent
 from ...context import current_span
@@ -134,7 +134,7 @@ def _basic_publish_wrapper(wrapped, instance, args, kwargs):
         return wrapped(*new_args, **new_kwargs)
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def _basic_properties_cls():
     # Resolved once instead of on every publish that passes ``properties=None``.
     from pika.spec import BasicProperties  # type: ignore[import-not-found]
@@ -182,7 +182,7 @@ def _resolve_broker_endpoint(conn):
     return getattr(params, "host", None), getattr(params, "port", None)
 
 
-def _connection_endpoint(channel) -> Optional[str]:
+def _connection_endpoint(channel) -> str | None:
     """``host:port`` of the broker the channel is attached to, when known."""
     return cached_endpoint(getattr(channel, "connection", None),
                            _resolve_broker_endpoint)
@@ -261,7 +261,7 @@ def _is_blocking_internal_dispatcher(callback) -> bool:
 _CALLBACK_PARAM_NAMES = ("on_message_callback", "consumer_callback")
 
 
-def _callback_param(wrapped) -> Tuple[str, int]:
+def _callback_param(wrapped) -> tuple[str, int]:
     """Resolve ``(name, positional_index)`` of the consumer-callback
     parameter of ``basic_consume`` from its actual signature.
 

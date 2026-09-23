@@ -64,9 +64,10 @@ import random
 import sys
 import threading
 import time
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any
+from collections.abc import Sequence
 
-from fastapi import FastAPI, Query, Request, Response
+from fastapi import FastAPI, Query, Request
 from fastapi.responses import JSONResponse
 
 import grpc
@@ -142,8 +143,8 @@ def _synthetic_sleep() -> None:
 # ---------------------------------------------------------------------------
 
 _GRPC_TARGET = os.environ.get("GRPC_TARGET", "localhost:50051")
-_grpc_channel: Optional[grpc.Channel] = None
-_grpc_stub: Optional[testapp_pb2_grpc.HelloStub] = None
+_grpc_channel: grpc.Channel | None = None
+_grpc_stub: testapp_pb2_grpc.HelloStub | None = None
 
 
 def _ensure_grpc_stub() -> testapp_pb2_grpc.HelloStub:
@@ -170,7 +171,7 @@ _ACCESS_LOG = os.environ.get("PINPOINT_E2E_ACCESS_LOG", "").strip().lower() in (
     "1", "true", "yes", "on",
 )
 
-_DB_CONFIG: Dict[str, Any] = {
+_DB_CONFIG: dict[str, Any] = {
     "host": os.environ.get("MYSQL_HOST", "127.0.0.1"),
     "port": int(os.environ.get("MYSQL_PORT", "3306")),
     "user": os.environ.get("MYSQL_USER", "root"),
@@ -411,7 +412,7 @@ async def _counter_middleware(request: Request, call_next):
 
 # --- /simple ---------------------------------------------------------------
 @app.get("/simple")
-def simple() -> Dict[str, Any]:
+def simple() -> dict[str, Any]:
     span = pinpoint.current_span()
     if span is not None:
         with span.new_span_event("simple.work"):
@@ -421,7 +422,7 @@ def simple() -> Dict[str, Any]:
 
 # --- /deep -----------------------------------------------------------------
 @app.get("/deep")
-def deep(depth: int = Query(10, ge=1, le=200)) -> Dict[str, Any]:
+def deep(depth: int = Query(10, ge=1, le=200)) -> dict[str, Any]:
     """N nested span events; unwind LIFO via ExitStack."""
     span = pinpoint.current_span()
     if span is None:
@@ -434,7 +435,7 @@ def deep(depth: int = Query(10, ge=1, le=200)) -> Dict[str, Any]:
 
 # --- /wide -----------------------------------------------------------------
 @app.get("/wide")
-def wide(width: int = Query(20, ge=1, le=2000)) -> Dict[str, Any]:
+def wide(width: int = Query(20, ge=1, le=2000)) -> dict[str, Any]:
     """N sequential start/end pairs."""
     span = pinpoint.current_span()
     if span is not None:
@@ -446,7 +447,7 @@ def wide(width: int = Query(20, ge=1, le=2000)) -> Dict[str, Any]:
 
 # --- /annotated ------------------------------------------------------------
 @app.get("/annotated")
-def annotated() -> Dict[str, Any]:
+def annotated() -> dict[str, Any]:
     """Exercise int / string / string-string annotations + ANNOTATION_API."""
     span = pinpoint.current_span()
     if span is None:
@@ -474,7 +475,7 @@ def annotated() -> Dict[str, Any]:
 
 # --- /mixed ----------------------------------------------------------------
 @app.get("/mixed")
-def mixed() -> Dict[str, Any]:
+def mixed() -> dict[str, Any]:
     """SQL + HTTP-client + async span hand-off — combo workout for tracer."""
     if _REAL_DB:
         conn = _db_connect()
@@ -495,7 +496,7 @@ def mixed() -> Dict[str, Any]:
     done = threading.Event()
 
     with pinpoint.async_trace("mixed.background") as async_span:
-        def _worker(handoff: Optional[pinpoint.Span]) -> None:
+        def _worker(handoff: pinpoint.Span | None) -> None:
             try:
                 if handoff is not None:
                     with handoff:
@@ -549,7 +550,7 @@ def error() -> JSONResponse:
 
 # --- SQL endpoints ---------------------------------------------------------
 @app.get("/db-crud")
-def db_crud() -> Dict[str, Any]:
+def db_crud() -> dict[str, Any]:
     if _REAL_DB:
         _real_db_crud()
         return {"endpoint": "db-crud", "backend": "real"}
@@ -565,7 +566,7 @@ def db_crud() -> Dict[str, Any]:
 
 
 @app.get("/db-batch")
-def db_batch(size: int = Query(10, ge=1, le=1000)) -> Dict[str, Any]:
+def db_batch(size: int = Query(10, ge=1, le=1000)) -> dict[str, Any]:
     if _REAL_DB:
         _real_db_batch(size)
         return {"endpoint": "db-batch", "size": size, "backend": "real"}
@@ -579,7 +580,7 @@ def db_batch(size: int = Query(10, ge=1, le=1000)) -> Dict[str, Any]:
 
 
 @app.get("/db-complex")
-def db_complex() -> Dict[str, Any]:
+def db_complex() -> dict[str, Any]:
     if _REAL_DB:
         _real_db_complex()
         return {"endpoint": "db-complex", "backend": "real"}
@@ -614,7 +615,7 @@ def _grpc_unary() -> str:
     ).msg
 
 
-def _grpc_stream() -> List[str]:
+def _grpc_stream() -> list[str]:
     return [
         resp.msg
         for resp in _ensure_grpc_stub().UnaryCallStreamReturn(
@@ -623,7 +624,7 @@ def _grpc_stream() -> List[str]:
     ]
 
 
-def _grpc_bidi(count: int) -> List[str]:
+def _grpc_bidi(count: int) -> list[str]:
     def _requests():
         for i in range(count):
             yield testapp_pb2.Greeting(msg=f"bidi-{i}")
@@ -642,22 +643,22 @@ def _grpc_client_stream(count: int) -> str:
 
 
 @app.get("/grpc-unary")
-def grpc_unary() -> Dict[str, Any]:
+def grpc_unary() -> dict[str, Any]:
     return {"endpoint": "grpc-unary", "response": _grpc_unary()}
 
 
 @app.get("/grpc-stream")
-def grpc_stream() -> Dict[str, Any]:
+def grpc_stream() -> dict[str, Any]:
     return {"endpoint": "grpc-stream", "responses": _grpc_stream()}
 
 
 @app.get("/grpc-bidi")
-def grpc_bidi(count: int = Query(3, ge=1, le=200)) -> Dict[str, Any]:
+def grpc_bidi(count: int = Query(3, ge=1, le=200)) -> dict[str, Any]:
     return {"endpoint": "grpc-bidi", "responses": _grpc_bidi(count)}
 
 
 @app.get("/grpc-all")
-def grpc_all() -> Dict[str, Any]:
+def grpc_all() -> dict[str, Any]:
     """Hit all four RPC patterns from a single request."""
     return {
         "endpoint": "grpc-all",
@@ -670,7 +671,7 @@ def grpc_all() -> Dict[str, Any]:
 
 # --- Agent lifecycle -------------------------------------------------------
 @app.post("/agent/start")
-def agent_start() -> Dict[str, Any]:
+def agent_start() -> dict[str, Any]:
     """Re-initialize the agent if it was shut down. ``init()`` is idempotent
     when an agent already exists, matching C++ StartAgent semantics."""
     pinpoint.init(
@@ -684,14 +685,14 @@ def agent_start() -> Dict[str, Any]:
 
 
 @app.post("/agent/shutdown")
-def agent_shutdown() -> Dict[str, Any]:
+def agent_shutdown() -> dict[str, Any]:
     pinpoint.shutdown()
     return {"endpoint": "agent/shutdown"}
 
 
 # --- /stats (untraced) -----------------------------------------------------
 @app.get("/stats")
-def stats() -> Dict[str, Any]:
+def stats() -> dict[str, Any]:
     with _lock:
         total = _total_requests
         active = _active_requests

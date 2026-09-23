@@ -35,7 +35,6 @@ from __future__ import annotations
 import copy
 import functools
 import inspect
-from typing import Optional
 
 from ..._log import get_logger
 from ...agent import get_agent
@@ -192,7 +191,7 @@ def _resolve_broker_endpoint(conn):
     return getattr(url, "host", None), getattr(url, "port", None)
 
 
-def _connection_endpoint(obj) -> Optional[str]:
+def _connection_endpoint(obj) -> str | None:
     """Best-effort ``host:port`` extraction from ``Exchange.channel.connection``
     (or any object hanging off the same chain)."""
     try:

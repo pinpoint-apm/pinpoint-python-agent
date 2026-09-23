@@ -35,7 +35,6 @@ attributes that mysql-connector uses internally.
 from __future__ import annotations
 
 import re
-from typing import Optional
 
 from ...instrumentor import BaseInstrumentor
 from ...service_type import SERVICE_TYPE_MYSQL
@@ -92,7 +91,7 @@ class MySQLConnectorInstrumentor(BaseInstrumentor):
             wrap(module, f"{cls}.cmd_init_db", _cmd_init_db_wrapper)
 
 
-def _extract_mysql_target(cursor) -> Optional[TargetInfo]:
+def _extract_mysql_target(cursor) -> TargetInfo | None:
     conn = (
         getattr(cursor, "_connection", None)
         or getattr(cursor, "connection", None)
@@ -152,7 +151,7 @@ _USE_RE = re.compile(
 )
 
 
-def _parse_use_target(statement) -> Optional[str]:
+def _parse_use_target(statement) -> str | None:
     """Return the schema named by a ``USE <db>`` statement, else ``None``.
 
     Inspects only a bounded prefix (:data:`_MAX_USE_HEAD`) so a large statement

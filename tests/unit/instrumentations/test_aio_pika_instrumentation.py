@@ -23,7 +23,6 @@ async callback wrapping, and the QueueIterator delivery-only span.
 from __future__ import annotations
 
 import asyncio
-from typing import List, Tuple
 
 import pytest
 
@@ -249,7 +248,7 @@ def test_exchange_publish_concurrent_shared_message_no_race(push_span):
     """
     both_injected = asyncio.Event()
     a_restored = asyncio.Event()
-    captured: List[Tuple[str, dict]] = []
+    captured: list[tuple[str, dict]] = []
     entered = {"count": 0}
 
     async def fake_publish(*args, **_kwargs):

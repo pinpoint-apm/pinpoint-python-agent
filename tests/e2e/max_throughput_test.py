@@ -25,7 +25,7 @@ import threading
 import time
 from collections import Counter
 from dataclasses import dataclass
-from typing import List, Optional, Sequence
+from collections.abc import Sequence
 
 from fixed_rps_test import (
     WORKLOADS,
@@ -71,8 +71,8 @@ class WorkerResults:
         self,
         endpoint: Endpoint,
         latency_seconds: float,
-        status: Optional[int],
-        error: Optional[str],
+        status: int | None,
+        error: str | None,
     ) -> None:
         latency_ms = latency_seconds * 1000.0
         self.completed += 1
@@ -216,7 +216,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         server = parse_server_address(args.base_url)

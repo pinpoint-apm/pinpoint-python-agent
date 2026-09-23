@@ -172,7 +172,8 @@ def test_session_endpoint_joins_contact_points_and_port():
 
 
 def test_session_endpoint_handles_no_cluster():
-    class _NoCluster: pass
+    class _NoCluster:
+        pass
     assert cassandra_instr._resolve_session_endpoint(_NoCluster()) == ("", 0)
 
 

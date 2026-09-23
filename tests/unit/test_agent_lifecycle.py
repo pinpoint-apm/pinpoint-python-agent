@@ -318,7 +318,7 @@ def test_native_log_bridge_is_opt_in_and_shutdown_follows_native(monkeypatch):
             super().stop()
 
     monkeypatch.setattr(agent_mod, "NativeLogConsumer", OrderedConsumer)
-    agent = agent_mod.init(
+    agent_mod.init(
         application_name="logs", native_log_to_python=True,
         native_log_queue_size=17)
 
@@ -670,7 +670,8 @@ def test_init_skips_sigterm_handler_when_disabled(monkeypatch):
 def _run_sigterm_script(body: str) -> subprocess.CompletedProcess:
     script = textwrap.dedent(body)
     return subprocess.run([sys.executable, "-c", script],
-                          capture_output=True, text=True, timeout=60)
+                          capture_output=True, text=True, timeout=60,
+                          check=False)
 
 
 def test_sigterm_default_disposition_exits_with_signal_semantics():
@@ -1006,7 +1007,7 @@ def test_init_disabled_makes_no_native_agent_call(monkeypatch):
 def test_init_survives_a_non_numeric_async_task_timeout(monkeypatch):
     """A bad optional kwarg must cost only that value, not the whole agent:
     init() cannot raise into the host app and tracing stays on."""
-    fake = _stub_native(monkeypatch)
+    _stub_native(monkeypatch)
 
     agent = agent_mod.init(application_name="bad-timeout", agent_name="x",
                            asyncio_task_span_timeout_ms="5m")
@@ -1094,7 +1095,7 @@ else:
 def _run_fork_e2e(prefork: bool) -> str:
     proc = subprocess.run(
         [sys.executable, "-c", _FORK_E2E_SCRIPT.format(prefork=prefork)],
-        capture_output=True, text=True, timeout=60)
+        capture_output=True, text=True, timeout=60, check=False)
     out = proc.stdout
     assert "CHILD_EXC" not in out, f"child raised: {out}\n{proc.stderr}"
     assert "EXIT_OK=True" in out, (

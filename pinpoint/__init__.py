@@ -54,13 +54,8 @@ __all__ = [
 
 import contextlib as _contextlib
 import functools as _functools
-from typing import (
-    Any as _Any,
-    Callable as _Callable,
-    ContextManager as _ContextManager,
-    Optional as _Optional,
-    Union as _Union,
-)
+from typing import Any as _Any
+from collections.abc import Callable as _Callable
 
 from . import context as _ctx
 from .service_type import SERVICE_TYPE_PYTHON_METHOD as _SERVICE_TYPE_PYTHON_METHOD
@@ -73,7 +68,7 @@ _NOOP_TRACE = _contextlib.nullcontext()
 
 
 def trace(operation: str, service_type: int = _SERVICE_TYPE_PYTHON_METHOD,
-          ) -> "_ContextManager[_Optional[SpanEvent]]":
+          ) -> "_contextlib.AbstractContextManager[SpanEvent | None]":
     """Create a child span event on the current span, or a no-op if none.
 
     >>> with pinpoint.trace("compute_invoice"):
@@ -114,7 +109,7 @@ class _AsyncTraceScope:
         return False
 
 
-def async_trace(operation: str) -> "_ContextManager[_Optional[Span]]":
+def async_trace(operation: str) -> "_contextlib.AbstractContextManager[Span | None]":
     """Create an async span on the current span and yield it for hand-off.
 
     Capture once on the originating thread, hand off, finalise from the worker.
@@ -163,7 +158,7 @@ def _resolve_op(fn: _Callable[..., _Any]) -> str:
 
 
 def spanevent(
-    operation: "_Union[str, _Callable[..., _Any], None]" = None,
+    operation: "str | _Callable[..., _Any] | None" = None,
     *,
     service_type: int = _SERVICE_TYPE_PYTHON_METHOD,
 ) -> _Any:
@@ -184,7 +179,7 @@ def spanevent(
     """
     import inspect
 
-    def _wrap(fn: _Callable[..., _Any], op: _Optional[str]) -> _Callable[..., _Any]:
+    def _wrap(fn: _Callable[..., _Any], op: str | None) -> _Callable[..., _Any]:
         op_name = op or _resolve_op(fn)
         if inspect.iscoroutinefunction(fn):
             @_functools.wraps(fn)
@@ -209,9 +204,9 @@ def spanevent(
 
 
 def span(
-    operation: "_Union[str, _Callable[..., _Any], None]" = None,
+    operation: "str | _Callable[..., _Any] | None" = None,
     *,
-    rpc_point: _Optional[str] = None,
+    rpc_point: str | None = None,
 ) -> _Any:
     """Open a new root span around every call of the wrapped function.
 
@@ -236,8 +231,8 @@ def span(
 
     def _wrap(
         fn: _Callable[..., _Any],
-        op: _Optional[str],
-        rpc: _Optional[str],
+        op: str | None,
+        rpc: str | None,
     ) -> _Callable[..., _Any]:
         op_name = op or _resolve_op(fn)
         rpc_name = rpc or op_name

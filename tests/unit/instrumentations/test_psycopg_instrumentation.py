@@ -495,6 +495,7 @@ def test_init_before_import_wraps_psycopg2_connect():
         [sys.executable, "-c", script],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0, result.stderr
     assert "WRAPPED" in result.stdout

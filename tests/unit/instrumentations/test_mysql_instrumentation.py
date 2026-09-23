@@ -57,7 +57,8 @@ def test_extract_mysql_target_handles_bytes_database():
 
 
 def test_extract_mysql_target_no_connection_returns_none():
-    class _Stub: pass
+    class _Stub:
+        pass
     assert mysql_instr._extract_mysql_target(_Stub()) is None
 
 

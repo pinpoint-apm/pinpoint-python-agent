@@ -18,7 +18,6 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from typing import List, Tuple
 
 import pytest
 
@@ -76,11 +75,11 @@ class _FakeSpan:
         self.remote_addr = None
         self.endpoint = None
         self.status_code = None
-        self.url_stats: List[Tuple[str, str, int]] = []
+        self.url_stats: list[tuple[str, str, int]] = []
         # (key, name, value) triples from Python-side header recording.
-        self.header_annotations: List[Tuple[int, str, str]] = []
+        self.header_annotations: list[tuple[int, str, str]] = []
         # (key, long, int, int, byte, byte, str) from proxy-header recording.
-        self.proxy_annotations: List[tuple] = []
+        self.proxy_annotations: list[tuple] = []
 
     def set_remote_address(self, addr: str) -> None:
         self.remote_addr = addr
@@ -94,12 +93,12 @@ class _FakeSpan:
     def set_url_stat(self, pattern: str, method: str, status: int) -> None:
         self.url_stats.append((pattern, method, status))
 
-    def annotate_string_string(self, k: int, s1: str, s2: str) -> "_FakeSpan":
+    def annotate_string_string(self, k: int, s1: str, s2: str) -> _FakeSpan:
         self.header_annotations.append((k, s1, s2))
         return self
 
-    def annotate_long_iibbs(self, k, l, i1, i2, b1, b2, s) -> "_FakeSpan":
-        self.proxy_annotations.append((k, l, i1, i2, b1, b2, s))
+    def annotate_long_iibbs(self, k, long_value, i1, i2, b1, b2, s) -> _FakeSpan:
+        self.proxy_annotations.append((k, long_value, i1, i2, b1, b2, s))
         return self
 
 
@@ -110,29 +109,29 @@ class _FakeSpanEvent:
         self.service_type = None
         self.destination = None
         self.endpoint = None
-        self.header_annotations: List[Tuple[int, str, str]] = []
+        self.header_annotations: list[tuple[int, str, str]] = []
 
-    def set_service_type(self, t: int) -> "_FakeSpanEvent":
+    def set_service_type(self, t: int) -> _FakeSpanEvent:
         self.service_type = t
         return self
 
-    def set_destination(self, d: str) -> "_FakeSpanEvent":
+    def set_destination(self, d: str) -> _FakeSpanEvent:
         self.destination = d
         return self
 
-    def set_end_point(self, ep: str) -> "_FakeSpanEvent":
+    def set_end_point(self, ep: str) -> _FakeSpanEvent:
         self.endpoint = ep
         return self
 
-    def annotate_int(self, k: int, v: int) -> "_FakeSpanEvent":
+    def annotate_int(self, k: int, v: int) -> _FakeSpanEvent:
         self._anno.append_int(k, v)
         return self
 
-    def annotate_string(self, k: int, v: str) -> "_FakeSpanEvent":
+    def annotate_string(self, k: int, v: str) -> _FakeSpanEvent:
         self._anno.append_string(k, v)
         return self
 
-    def annotate_string_string(self, k: int, s1: str, s2: str) -> "_FakeSpanEvent":
+    def annotate_string_string(self, k: int, s1: str, s2: str) -> _FakeSpanEvent:
         self.header_annotations.append((k, s1, s2))
         return self
 
@@ -152,14 +151,14 @@ def test_headers_reader_get_is_case_insensitive():
 
 def test_headers_reader_iterates_all_entries():
     r = HeadersReader([("A", "1"), ("B", "2"), ("C", "3")])
-    seen: List[Tuple[str, str]] = []
+    seen: list[tuple[str, str]] = []
     r.for_each(lambda k, v: (seen.append((k, v)), True)[1])
     assert seen == [("A", "1"), ("B", "2"), ("C", "3")]
 
 
 def test_headers_reader_for_each_stops_when_callback_returns_false():
     r = HeadersReader([("A", "1"), ("B", "2"), ("C", "3")])
-    seen: List[Tuple[str, str]] = []
+    seen: list[tuple[str, str]] = []
 
     def cb(k: str, v: str) -> bool:
         seen.append((k, v))
@@ -177,7 +176,7 @@ def test_asgi_headers_reader_decodes_byte_pairs_case_insensitively():
     assert r.get("HOST") == "example.test"
     assert r.get("x-request-id") == "abc"
 
-    seen: List[Tuple[str, str]] = []
+    seen: list[tuple[str, str]] = []
     r.for_each(lambda k, v: (seen.append((k, v)), True)[1])
     assert seen == [("host", "example.test"), ("X-Request-ID", "abc")]
 
@@ -222,7 +221,7 @@ def test_asgi_headers_reader_get_returns_last_value_for_duplicates():
 
 
 def test_asgi_headers_reader_decodes_unmatched_values_only_when_iterated():
-    decoded: List[str] = []
+    decoded: list[str] = []
 
     class LazyValue:
         def __str__(self) -> str:
@@ -238,7 +237,7 @@ def test_asgi_headers_reader_decodes_unmatched_values_only_when_iterated():
     assert r.get("HOST") == "example.test"
     assert decoded == []
 
-    seen: List[Tuple[str, str]] = []
+    seen: list[tuple[str, str]] = []
     r.for_each(lambda k, v: (seen.append((k, v)), True)[1])
     assert seen == [("host", "example.test"), ("x-lazy", "late")]
     assert decoded == ["x-lazy"]
@@ -557,7 +556,7 @@ def test_headers_reader_skips_none_keys_and_values():
     r = HeadersReader([("A", "1"), (None, "x"), ("B", None), ("C", "3")])
     assert r.get("a") == "1"
     assert r.get("c") == "3"
-    seen: List[Tuple[str, str]] = []
+    seen: list[tuple[str, str]] = []
     r.for_each(lambda k, v: (seen.append((k, v)), True)[1])
     assert seen == [("A", "1"), ("C", "3")]
 
@@ -781,7 +780,7 @@ def test_environ_header_reader_for_each_yields_only_headers():
         "REQUEST_METHOD": "GET",
         "wsgi.input": object(),
     }
-    seen: List[Tuple[str, str]] = []
+    seen: list[tuple[str, str]] = []
     EnvironHeaderReader(environ).for_each(
         lambda k, v: (seen.append((k, v)), True)[1]
     )
@@ -822,7 +821,7 @@ def test_multidict_header_reader_get_and_for_each():
     assert r.get("host") == "ex"
     assert r.get("X-FORWARDED-FOR") == "1.2.3.4"
     assert r.get("missing") is None
-    seen: List[Tuple[str, str]] = []
+    seen: list[tuple[str, str]] = []
     r.for_each(lambda k, v: (seen.append((k, v)), True)[1])
     assert ("Host", "ex") in seen
 
@@ -868,7 +867,7 @@ def test_parse_cookie_header_skips_malformed_and_empty_names():
 
 
 def test_asgi_reader_switches_to_dict_after_threshold():
-    decoded: List[str] = []
+    decoded: list[str] = []
 
     class LazyValue:
         def __init__(self, s: str):

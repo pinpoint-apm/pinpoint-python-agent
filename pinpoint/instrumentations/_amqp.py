@@ -22,8 +22,6 @@ their objects, so the annotators take the calling module's
 
 from __future__ import annotations
 
-from typing import Dict
-
 from ..annotation import (
     ANNOTATION_RABBITMQ_EXCHANGE,
     ANNOTATION_RABBITMQ_ROUTINGKEY,
@@ -32,23 +30,26 @@ from ..context import current_span, set_current_span
 from ..errors import safe_try
 from ..http_helper import has_pinpoint_mapping
 from ..service_type import SERVICE_TYPE_RABBITMQ_CLIENT
-from ._util import close_span_scope as close_consumer_scope, end_quietly
+from ._util import close_span_scope, end_quietly
+
+# The name the AMQP instrumentations (aio_pika, pika) import it under.
+close_consumer_scope = close_span_scope
 
 OPERATION_CONSUMER_INVOCATION = "RabbitMQ Consumer Invocation"
 
 
-def headers_to_str_map(carrier) -> Dict[str, str]:
+def headers_to_str_map(carrier) -> dict[str, str]:
     """``carrier.headers`` as a plain ``str -> str`` dict (bytes decoded,
     ``None`` values dropped); ``{}`` on any surprise."""
     raw = getattr(carrier, "headers", None) or {}
-    out: Dict[str, str] = {}
+    out: dict[str, str] = {}
     try:
         for k, v in raw.items():
             if v is None:
                 continue
-            if isinstance(v, (bytes, bytearray)):
-                v = v.decode("utf-8", errors="replace")
-            out[str(k)] = str(v)
+            text = (v.decode("utf-8", errors="replace")
+                    if isinstance(v, (bytes, bytearray)) else v)
+            out[str(k)] = str(text)
     except Exception:  # noqa: BLE001
         return {}
     return out

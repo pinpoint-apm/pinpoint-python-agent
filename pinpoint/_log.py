@@ -19,7 +19,6 @@ import logging
 import logging.handlers
 import os
 import sys
-from typing import Optional
 
 _LOGGER_NAME = "pinpoint"
 _DEFAULT_LEVEL = logging.INFO
@@ -28,7 +27,7 @@ _FORMAT = "%(asctime)s [%(name)s] %(levelname)s: %(message)s"
 # The handler configure() installed, so a re-run (new level, after fork with a
 # %pid% path) swaps it instead of stacking a second one. User-added handlers on
 # the ``pinpoint`` logger are never touched.
-_handler: Optional[logging.Handler] = None
+_handler: logging.Handler | None = None
 
 # Whether ``pinpoint.*`` logging is at DEBUG, resolved once by configure().
 # Instrumentation call tracing reads this instead of asking the logger on every
