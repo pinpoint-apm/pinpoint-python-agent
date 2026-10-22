@@ -250,6 +250,36 @@ def test_handshake_registers_agent_info(core_agent, collector):
     collector.wait_for(lambda: collector.ping_count >= 1, what="first ping")
 
 
+def test_v4_identity_registers_without_api_key(core_agent, collector):
+    """uid_version v4 requires service_name but not api_key: the Java agent
+    treats the key as optional and the collector reads it as nullable without
+    validating it. Without a key the agent still registers, the v4 headers go
+    out, and ``apikey`` is omitted rather than sent empty."""
+    agent, agent_id = core_agent(uid_version="v4",
+                                 service_name="core-it-service")
+
+    metadata, _info = collector.wait_agent_info(agent_id)
+
+    assert agent.enabled
+    assert len(agent_id) == 22
+    assert metadata["protocol.version"] == "400"
+    assert metadata["servicename"] == "core-it-service"
+    assert metadata["agentname"] == "core-it-agent"
+    assert "apikey" not in metadata
+
+
+def test_v4_identity_sends_api_key_when_configured(core_agent, collector):
+    agent, agent_id = core_agent(uid_version="v4",
+                                 service_name="core-it-service",
+                                 api_key="core-it-key")
+
+    metadata, _info = collector.wait_agent_info(agent_id)
+
+    assert metadata["protocol.version"] == "400"
+    assert metadata["servicename"] == "core-it-service"
+    assert metadata["apikey"] == "core-it-key"
+
+
 def test_config_file_option_and_watcher_reconfigure_sampling(
     core_agent,
     collector,

@@ -110,9 +110,9 @@ pinpoint.init(application_name="MyApp", extra_yaml="FutureNativeOption: true")
 |---|---|---|---|---|
 | `application_name` | `PINPOINT_PY_APPLICATION_NAME` | str | `""` | **Required.** When neither this nor `config_file_path` is set, `init()` logs a warning and disables the agent. Max 24 chars for `uid_version` v1, otherwise 254. |
 | `agent_name` | `PINPOINT_PY_AGENT_NAME` | str | `""` | Optional human-readable label. The agent id is not configurable — always an auto-generated per-process UUIDv7. |
-| `uid_version` | `PINPOINT_PY_UID_VERSION` | str | `""` (→ `v3`) | Agent identity version. `v3` (the default) needs only `application_name`; `v1` is the legacy format and caps `application_name` at 24 characters; `v4` additionally requires `service_name` and `api_key`. |
-| `service_name` | `PINPOINT_PY_SERVICE_NAME` | str | `""` | **Required for v4**, together with `api_key`. |
-| `api_key` | `PINPOINT_PY_API_KEY` | str | `""` | **Required for v4.** Unused otherwise. |
+| `uid_version` | `PINPOINT_PY_UID_VERSION` | str | `""` (→ `v3`) | Agent identity version. `v3` (the default) needs only `application_name`; `v1` is the legacy format and caps `application_name` at 24 characters; `v4` additionally requires `service_name`; `api_key` is optional. |
+| `service_name` | `PINPOINT_PY_SERVICE_NAME` | str | `""` | **Required for v4.** Unused otherwise. |
+| `api_key` | `PINPOINT_PY_API_KEY` | str | `""` | Optional, v4 only — the same as the Java agent's `-Dpinpoint.apikey`. Sent as the `apikey` gRPC header when set and omitted when empty. Unused otherwise. |
 | `enabled` | `PINPOINT_PY_ENABLE` | bool | `True` | `False` disables tracing without code changes: the native side gets `Enable: false` **and** the Python instrumentations short-circuit. |
 | `is_container` | `PINPOINT_PY_IS_CONTAINER` | bool | `False` | The rendered YAML always writes this key, so set it explicitly in containers. (Auto-detection applies only when a config file omits the key.) |
 | `application_type` | — | int | `1700` | Pinpoint service type (`APP_TYPE_PYTHON`). Passed via native `AgentOptions`, not YAML; no env var. |

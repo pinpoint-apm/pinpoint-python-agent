@@ -62,7 +62,7 @@ class Config:
     agent_name: str = ""                    # PINPOINT_PY_AGENT_NAME (display name)
     uid_version: str = ""                   # PINPOINT_PY_UID_VERSION (empty -> v3)
     service_name: str = ""                  # PINPOINT_PY_SERVICE_NAME (required for v4)
-    api_key: str = ""                       # PINPOINT_PY_API_KEY (required for v4)
+    api_key: str = ""                       # PINPOINT_PY_API_KEY (optional, v4 only)
     # Not a YAML key (and no env var): passed through native AgentOptions.
     # Default 1700.
     application_type: int = APP_TYPE_PYTHON
