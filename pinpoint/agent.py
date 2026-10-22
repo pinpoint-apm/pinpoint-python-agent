@@ -25,6 +25,7 @@ import sys
 import _thread
 import threading
 from collections.abc import Mapping
+from dataclasses import dataclass
 
 from . import _native  # type: ignore[import-not-found]
 from . import callstack as _callstack
@@ -162,6 +163,58 @@ _FALLBACK_SPAN_CONFIG = (None, (), (),
                          _DEFAULT_MAX_EVENT_DEPTH, _DEFAULT_MAX_EVENT_SEQUENCE)
 
 
+@dataclass(frozen=True)
+class ConfigReloadResult:
+    """Outcome of :func:`pinpoint.reload_config` / :meth:`Agent.reload_config`.
+
+    ``status`` is one of:
+
+    * ``"applied"`` — the reloadable settings were applied; spans created from
+      now on use them, spans in flight keep the generation they started with.
+      Settings listed in ``restart_required`` were **not** applied.
+    * ``"no_agent"`` — no running native agent in this process: ``init()`` was
+      not called, the agent is disabled, failed to start, was shut down, is
+      the pending prefork master, or was inherited across ``fork()``.
+    * ``"config_file_active"`` — the agent reads its configuration from a file
+      (``config_file_path`` / ``PINPOINT_PY_CONFIG_FILE``), which outranks YAML
+      exactly as it does at startup, so the YAML would not be used.
+    * ``"invalid_yaml"`` — the text is not a YAML mapping.
+    * ``"invalid_config"`` — a value cannot be read as its setting's type, or
+      the configuration fails the validation ``init()`` applies
+      (``ApplicationName`` and ``Collector.Host`` are required).
+    * ``"error"`` — unexpected failure; ``message`` carries the reason.
+
+    Every status but ``"applied"`` leaves the agent exactly as it was.
+    ``restart_required`` lists, by YAML path (``"ApplicationName"``,
+    ``"Collector.Host"``, ...), the non-reloadable settings whose value in the
+    new YAML differs from the running one; they keep their running values
+    until the process restarts. ``bool(result)`` is :attr:`ok`.
+    """
+
+    status: str
+    restart_required: tuple[str, ...] = ()
+    message: str = ""
+
+    @property
+    def ok(self) -> bool:
+        return self.status == "applied"
+
+    def __bool__(self) -> bool:
+        return self.ok
+
+
+# Index = the integer value of the native ConfigReloadResult::Status enum, as
+# _native.reload_agent_config() returns it (see the binding's comment).
+_RELOAD_STATUS_NAMES = (
+    "applied", "no_agent", "config_file_active", "invalid_yaml",
+    "invalid_config", "error",
+)
+
+_NO_AGENT_MESSAGE = (
+    "no agent is running in this process (pinpoint.init() was not called, "
+    "the agent is disabled, failed to start, or was shut down)")
+
+
 class Agent:
     """Thin wrapper around `_native.Agent`.
 
@@ -264,6 +317,57 @@ class Agent:
         except Exception:  # noqa: BLE001
             _log.debug("native config snapshot unavailable", exc_info=True)
             return None
+
+    # ---- configuration -----------------------------------------------------
+    def reload_config(self, config_yaml: str) -> ConfigReloadResult:
+        """Re-resolve the running native agent's configuration from
+        ``config_yaml`` and apply the settings that can change at runtime.
+
+        See :func:`pinpoint.reload_config` for the contract; this is the
+        per-instance form.
+        """
+        with self._shutdown_lock:
+            if self._shutdown or self._native is None:
+                return ConfigReloadResult("no_agent", message=_NO_AGENT_MESSAGE)
+        # The native call addresses the process-wide agent, which this wrapper
+        # is the Python owner of, so it is a module function, not a method.
+        reload = getattr(_native, "reload_agent_config", None)
+        if reload is None:
+            # A binding built without the call (an older native extension).
+            return ConfigReloadResult(
+                "error", message="the native extension has no reload_agent_config()")
+        # Outside the lock: native parses the YAML and may reopen the log file
+        # under its own reload mutex, which also serializes it with Shutdown().
+        try:
+            status, restart_required, message = reload(str(config_yaml))
+            status = int(status)
+            name = (_RELOAD_STATUS_NAMES[status]
+                    if 0 <= status < len(_RELOAD_STATUS_NAMES) else "error")
+            result = ConfigReloadResult(
+                name, tuple(str(path) for path in restart_required), str(message))
+        except Exception as exc:  # noqa: BLE001
+            # The native entry point catches everything itself, so this is a
+            # marshalling failure; the caller gets a status either way.
+            _log.debug("native config reload failed", exc_info=True)
+            result = ConfigReloadResult(
+                "error", message=f"{type(exc).__name__}: {exc}")
+        if not result.ok:
+            _log.warning("pinpoint: config reload refused, nothing changed (%s): %s",
+                         result.status, result.message)
+            return result
+        if result.restart_required:
+            _log.warning(
+                "pinpoint: config reload applied, but these settings are not "
+                "reloadable and keep their running values until restart: %s",
+                ", ".join(result.restart_required))
+        # The next sampled span would refresh the cached snapshot by itself
+        # (its revision moved); do it now so the per-generation checks — the
+        # implicit bind-value warning — run at the reload, not at the next
+        # request. A failed fetch keeps the old tuple and that per-span path.
+        span_config = self._load_span_config()
+        if span_config is not None:
+            self._span_config = span_config
+        return result
 
     # ---- span creation -----------------------------------------------------
     def new_span(self, operation: str, rpc_point: str,
@@ -904,6 +1008,56 @@ def _after_fork_reinit() -> None:
 def get_agent() -> Agent | None:
     """Return the current agent instance, or None if `init()` wasn't called."""
     return _instance
+
+
+def reload_config(config_yaml: str) -> ConfigReloadResult:
+    """Re-resolve the running agent's configuration from ``config_yaml`` and
+    apply the settings that can change at runtime.
+
+    The YAML is resolved the way ``init()`` resolves its own: defaults, then
+    the YAML (with its ``ActiveProfile``), then the ``PINPOINT_PY_*``
+    environment variables, which keep outranking it. It is the **complete**
+    configuration — a key it omits takes its default (or environment) value,
+    not the value it had before the call, and ``init()`` kwargs are not
+    carried over. Build it from a :class:`~pinpoint.config.Config` to keep
+    them::
+
+        import pinpoint
+        from pinpoint.config import Config
+
+        result = pinpoint.reload_config(
+            Config.from_kwargs(application_name="checkout",
+                               sampling_type="PERCENT",
+                               sampling_percent_rate=1).to_yaml())
+        if not result:
+            log.warning("reload refused: %s", result.message)
+        elif result.restart_required:
+            log.warning("needs a restart: %s", result.restart_required)
+
+    Reloadable settings — sampling, per-span limits and error policy, HTTP
+    recording and filters, SQL recording, native logging, callstack capture
+    (see the table in ``docs/config.md``) — take effect for spans created
+    after the call; spans in flight keep the generation they started with.
+    Identity, collector, stat, URL-statistics, queue and cache sizes,
+    ``Enable`` and ``EnableConfigFileWatcher`` keep their running values, and
+    those the YAML would change come back in
+    :attr:`ConfigReloadResult.restart_required`. Settings that live only on
+    the Python side — the Python logger level, ``asyncio_task_span_timeout_ms``,
+    ``exception_chain_max_depth``, the Python-matched ``span_ignore_errors``
+    rules — are not part of the native configuration and are unchanged.
+
+    Every refusal (any status but ``"applied"``) leaves the agent exactly as
+    it was; the reason is in :attr:`ConfigReloadResult.message` and logged.
+    Never raises. Thread-safe, but it parses YAML and may reopen the native
+    log file, so call it from a control path (a signal handler, an admin
+    endpoint), not per request. With a config file in use the file stays the
+    source and the call is refused with ``"config_file_active"``; edit the
+    file and let the watcher pick it up instead.
+    """
+    agent = _instance
+    if agent is None:
+        return ConfigReloadResult("no_agent", message=_NO_AGENT_MESSAGE)
+    return agent.reload_config(config_yaml)
 
 
 def shutdown() -> None:

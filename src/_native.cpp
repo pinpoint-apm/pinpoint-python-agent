@@ -1081,4 +1081,26 @@ PYBIND11_MODULE(_native, m) {
           py::arg("env_prefix"), py::arg("app_type"), py::arg("server_info"),
           py::arg("args"), py::arg("libs"), py::arg("log_bridge") = nullptr,
           py::call_guard<py::gil_scoped_release>());
+    // Returns (status, restart_required, message): status is the integer
+    // value of pinpoint::ConfigReloadResult::Status (0 = applied, 1 = no
+    // agent, 2 = config file active, 3 = invalid YAML, 4 = invalid config,
+    // 5 = error), restart_required the YAML paths of the non-reloadable
+    // settings the YAML would have changed, message why a reload was refused.
+    // Every failure is a status, never an exception: the native entry point
+    // already catches everything. agent.Agent.reload_config() names the
+    // statuses.
+    m.def("reload_agent_config",
+          [](std::string_view config_yaml) {
+              // Parses YAML and may reopen the log file under the agent's
+              // reload mutex; the borrowed view is safe across the release
+              // (header rule two).
+              pp::ConfigReloadResult result;
+              {
+                  py::gil_scoped_release release;
+                  result = pp::ReloadAgentConfig(config_yaml);
+              }
+              return py::make_tuple(static_cast<int>(result.status),
+                                    result.restart_required, result.message);
+          },
+          py::arg("config_yaml"));
 }

@@ -544,6 +544,62 @@ the four SQL normalization/cache settings (`sql_remove_comments`,
 fixed. Native callstack
 recording is reloadable; the Python frame-capture gate has the limitation above.
 
+### Reloading from YAML: `pinpoint.reload_config()`
+
+A process that manages its own configuration — a control plane pushing new
+settings, an admin endpoint, a `SIGHUP` handler — can apply a new YAML document
+without a file and without a restart:
+
+```python
+import pinpoint
+from pinpoint.config import Config
+
+result = pinpoint.reload_config(
+    Config.from_kwargs(application_name="checkout",
+                       sampling_type="PERCENT",
+                       sampling_percent_rate=1).to_yaml())
+if not result:                      # result.ok is False
+    log.warning("pinpoint reload refused (%s): %s", result.status, result.message)
+elif result.restart_required:
+    log.warning("pinpoint: a restart is needed to change %s", result.restart_required)
+```
+
+The YAML is resolved exactly as `init()` resolves its own — defaults, then the
+YAML (with its `ActiveProfile`), then the `PINPOINT_PY_*` environment variables,
+which keep outranking it — and it is the **complete** configuration: a key it
+omits takes its default (or environment) value, not the value it had before the
+call, and the original `init()` kwargs are not carried over. `ApplicationName`
+and `Collector.Host` are required as at startup. Building the document from a
+`Config` (`Config.from_kwargs(...).to_yaml()`, as above) keeps the kwargs you
+do not mean to change; `extra_yaml=` carries keys the kwargs do not surface.
+
+The reloadable/non-reloadable split is the table above. Reloadable settings
+take effect for spans created after the call; a span in flight keeps the
+generation it started with. A non-reloadable setting the YAML would change is
+left at its running value and reported by YAML path in
+`result.restart_required` (also logged as a warning). Settings that exist only
+on the Python side — the Python logger level, `asyncio_task_span_timeout_ms`,
+`exception_chain_max_depth`, the Python-matched `span_ignore_errors` rules —
+are not part of the native configuration and are unchanged.
+
+`reload_config()` never raises; it returns a `ConfigReloadResult` whose
+`status` is one of:
+
+| `status` | Meaning |
+|---|---|
+| `applied` | Reloadable settings applied. `restart_required` may be non-empty. |
+| `no_agent` | No running agent: `init()` not called, disabled, failed, shut down, the pending prefork master. |
+| `config_file_active` | The agent reads a config file (`config_file_path` / `PINPOINT_PY_CONFIG_FILE`), which outranks YAML as at startup. Edit the file and let the watcher apply it. |
+| `invalid_yaml` | Not a YAML mapping (syntax error, scalar or sequence document). |
+| `invalid_config` | A value of the wrong type, or validation `init()` would fail (`ApplicationName` / `Collector.Host` missing). |
+| `error` | Unexpected failure; see `message`. |
+
+Every status but `applied` leaves the agent exactly as it was — no setting,
+logger or config generation changes. The call is thread-safe and serialized
+with startup, shutdown and the file watcher, but it parses YAML and may reopen
+the native log file, so call it from a control path, not per request.
+`init()` itself stays one-shot: calling it again never reloads anything.
+
 ---
 
 ## Configuration Examples

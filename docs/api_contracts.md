@@ -302,6 +302,14 @@ the actual request path.
   Spans created before the shutdown may still be ended safely afterwards;
   their data is dropped. A later `init()` builds a fresh agent — see
   [Stopping and Resuming](troubleshooting.md#stopping-and-resuming-the-agent).
+- `pinpoint.reload_config(yaml)` is the one way to change a running agent's
+  configuration from code; a repeated `init()` never reloads anything. The
+  YAML is the complete configuration, resolved as at startup with environment
+  variables still on top. It never raises: the `ConfigReloadResult` it returns
+  says whether the reloadable settings were applied and which non-reloadable
+  ones would need a restart, and any refusal leaves the agent untouched. Spans
+  in flight keep the generation they started with — see
+  [Reloading from YAML](config.md#reloading-from-yaml-pinpointreload_config).
 
 ## 11. Native Log Bridge
 

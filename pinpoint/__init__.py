@@ -19,6 +19,7 @@ Public surface:
 
 - :func:`init`              -- initialize the process-wide agent
 - :func:`shutdown`          -- shut it down
+- :func:`reload_config`     -- apply a new YAML configuration at runtime
 - :func:`get_agent`         -- current agent (or None)
 - :func:`current_span`      -- span attached to the current context
 - :func:`trace`             -- decorator / context manager for manual spans
@@ -32,7 +33,7 @@ Public surface:
 """
 
 from ._version import __version__
-from .agent import Agent, get_agent, init, shutdown
+from .agent import Agent, ConfigReloadResult, get_agent, init, reload_config, shutdown
 from .context import current_span
 from .tracer import Span, SpanEvent
 
@@ -43,6 +44,8 @@ __all__ = [
     "SpanEvent",
     "init",
     "shutdown",
+    "reload_config",
+    "ConfigReloadResult",
     "get_agent",
     "current_span",
     "trace",
