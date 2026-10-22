@@ -108,16 +108,44 @@ pinpoint.init(application_name="MyApp", extra_yaml="FutureNativeOption: true")
 
 | `init()` kwarg | Environment Variable | Type | Default | Notes |
 |---|---|---|---|---|
-| `application_name` | `PINPOINT_PY_APPLICATION_NAME` | str | `""` | **Required.** When neither this nor `config_file_path` is set, `init()` logs a warning and disables the agent. Max 24 chars for `uid_version` v1, otherwise 254. |
-| `agent_name` | `PINPOINT_PY_AGENT_NAME` | str | `""` | Optional human-readable label. The agent id is not configurable — always an auto-generated per-process UUIDv7. |
+| `application_name` | `PINPOINT_PY_APPLICATION_NAME` | str | `""` | **Required.** When neither this nor `config_file_path` is set, `init()` logs a warning and disables the agent. Max 24 chars for `uid_version` v1, otherwise 254. See [Name rules](#name-rules). |
+| `agent_name` | `PINPOINT_PY_AGENT_NAME` | str | `""` | Optional human-readable label; defaults to the agent id. Max 255 chars (254 for v4). The agent id is not configurable — always an auto-generated per-process UUIDv7. See [Name rules](#name-rules). |
 | `uid_version` | `PINPOINT_PY_UID_VERSION` | str | `""` (→ `v3`) | Agent identity version. `v3` (the default) needs only `application_name`; `v1` is the legacy format and caps `application_name` at 24 characters; `v4` additionally requires `service_name`; `api_key` is optional. |
-| `service_name` | `PINPOINT_PY_SERVICE_NAME` | str | `""` | **Required for v4.** Unused otherwise. |
+| `service_name` | `PINPOINT_PY_SERVICE_NAME` | str | `""` | **Required for v4.** 3–254 chars. Unused otherwise. See [Name rules](#name-rules). |
 | `api_key` | `PINPOINT_PY_API_KEY` | str | `""` | Optional, v4 only — the same as the Java agent's `-Dpinpoint.apikey`. Sent as the `apikey` gRPC header when set and omitted when empty. Unused otherwise. |
 | `enabled` | `PINPOINT_PY_ENABLE` | bool | `True` | `False` disables tracing without code changes: the native side gets `Enable: false` **and** the Python instrumentations short-circuit. |
 | `is_container` | `PINPOINT_PY_IS_CONTAINER` | bool | `False` | The rendered YAML always writes this key, so set it explicitly in containers. (Auto-detection applies only when a config file omits the key.) |
 | `application_type` | — | int | `1700` | Pinpoint service type (`APP_TYPE_PYTHON`). Passed via native `AgentOptions`, not YAML; no env var. |
 | `config_file_path` | `PINPOINT_PY_CONFIG_FILE` | str | `""` | See [Method 3](#method-3-configuration-file). Also available as `pinpoint-run --config-file`. |
 | `server_info=` (init param) | `PINPOINT_PY_SERVER_INFO` | str | `"Python Application"` | AgentInfo server metadata label. The env var is read by the `pinpoint-run` bootstrap (and its `--server-info` flag), not by a manual `init()`. |
+
+### Name rules
+
+`application_name`, `agent_name`, and `service_name` share one character set,
+enforced by the native agent at startup and again by the Pinpoint Collector on
+every gRPC request:
+
+- **Allowed characters:** ASCII letters (`a-z`, `A-Z`), digits (`0-9`), `.`,
+  `-`, and `_`. Nothing else — no spaces, no `/`, no non-ASCII (e.g. Korean)
+  characters.
+- **Empty strings are invalid.** An empty `agent_name` falls back to the agent
+  id; an empty `application_name` (or `service_name` on v4) fails validation.
+
+| Name | v1 | v3 (default) | v4 |
+|---|---|---|---|
+| `application_name` | required, ≤ 24 | required, ≤ 254 | required, ≤ 254 |
+| `agent_name` | optional, ≤ 255 | optional, ≤ 255 | optional, ≤ 254 |
+| `service_name` | unused | unused | required, 3–254 |
+
+A name that fails validation disables the agent: the native side logs
+`failed to resolve agent identity` and `init()` returns a no-op agent. The
+Python layer passes the values through unchanged, so the error surfaces in the
+native log, not as a Python exception.
+
+The 3-character minimum for `service_name` is enforced by the Pinpoint Web
+service registry and the Java agent, not by the native agent here. A shorter
+name passes local validation but cannot be registered as a service in the
+Pinpoint UI, so treat 3 as the effective minimum.
 
 ---
 
@@ -582,7 +610,7 @@ the reverse index once you know the symptom:
 | Symptom | Keys to change |
 |---|---|
 | Agent never connects | `collector_host`, `collector_*_port` ([Collector](#collector-configuration)) |
-| Nothing is traced at all | `application_name` unset disables the agent; `enabled=False` / `PINPOINT_PY_ENABLE=false` disables it deliberately ([Agent](#agent-configuration)) |
+| Nothing is traced at all | `application_name` unset disables the agent, as does a name with disallowed characters or over the length limit (native log: `failed to resolve agent identity`, see [Name rules](#name-rules)); `enabled=False` / `PINPOINT_PY_ENABLE=false` disables it deliberately ([Agent](#agent-configuration)) |
 | Transactions missing | `sampling_type="PERCENT"` with `sampling_percent_rate=100.0` to sample all; clear `http_server_exclude_url` / `exclude_method` ([Sampling](#sampling-configuration), [HTTP](#http-configuration)) |
 | One library not traced | `PINPOINT_PY_DISABLED_INSTRUMENTATIONS` ([Python-only](#python-only-options)) |
 | Memory too high | Lower `span_queue_size`, `span_max_event_sequence`, `http_url_stat_limit` |
