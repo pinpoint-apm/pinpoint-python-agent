@@ -20,7 +20,7 @@ Contract under test: profiling detail is inherited from the pure no-op
 span still owns a native lifetime — ``end()`` must reach native exactly once,
 ``set_url_stat`` is cached and flushed through the URL-stat end helper,
 ``span_id`` is the real native id, and injection propagates the ``s0`` decision
-downstream.
+downstream — from the span and from its ``UnSampledAsyncSpan`` children.
 """
 
 from __future__ import annotations
@@ -32,6 +32,7 @@ import pytest
 from pinpoint import propagator
 from pinpoint.agent import (
     Agent,
+    UnSampledAsyncSpan,
     UnSampledSpan,
     _NULL_SPAN_EVENT,
     _NullAgent,
@@ -314,26 +315,83 @@ def test_with_block_swallows_no_exception_and_still_ends():
         "end_span", "", "", 0, (("RuntimeError", "boom"),))]
 
 
-def test_async_children_and_detached_views_are_pure_null_spans():
+_S0 = ((propagator.HEADER_SAMPLED, "s0"),)
+
+
+def test_async_children_and_detached_views_propagate_the_unsampled_decision():
+    """Mirror of pinpoint-cpp-agent #102: a child of an unsampled span must
+    still tell downstream to drop the transaction, or the downstream agent
+    starts a trace of its own and samples it by itself."""
     native = _recording_native()
     span = UnSampledSpan(native, span_id=native.span_id)
 
     child = span.new_async_span("bg")
     detached = span._detached_context_span()
+    forked = span._fork_for_async_task(task=object())
 
-    assert type(child) is _NullSpan
-    assert type(detached) is _NullSpan
-    assert detached is not span
-    # Sharing self keeps the per-task fork allocation-free (there is no
-    # native event stack to protect on an unsampled span).
-    assert span._fork_for_async_task(task=object()) is span
+    views = (child, detached, forked)
+    assert len({id(v) for v in views}) == 3
+    for view in views:
+        assert type(view) is UnSampledAsyncSpan
+        assert view is not span
+        assert view.sampled is False
+        assert view.trace_id == ""
+        assert view.span_id == native.span_id
+        assert view.span_id_str == str(native.span_id)
+        assert tuple(view.inject_context_items()) == _S0
+        assert tuple(propagator.inject_items(view)) == _S0
 
+    # Not a transaction: recording is dropped and nothing crosses to native.
+    child.set_error(RuntimeError("boom")).set_url_stat("/x", "GET", 500)
+    assert child.new_span_event("step") is _NULL_SPAN_EVENT
     child.end()
+    child.end()  # idempotent no-op
     detached.end()
-    assert native.end_calls == []  # children never touch the parent native
+    assert native.end_calls == []
 
+    # The children hold nothing of the parent, so they outlive it: the parent
+    # stops injecting at end(), its children and grandchildren do not.
     span.end()
     assert native.end_calls == [("end_span", "", "", 0, ())]
+    assert tuple(span.inject_context_items()) == ()
+    for view in views:
+        assert tuple(view.inject_context_items()) == _S0
+        assert tuple(view.new_async_span("bg2").inject_context_items()) == _S0
+        assert tuple(view._detached_context_span().inject_context_items()) == _S0
+    # ... and the parent still hands one out after it ended, like native.
+    assert type(span.new_async_span("late")) is UnSampledAsyncSpan
+    assert native.end_calls == [("end_span", "", "", 0, ())]
+
+
+def test_unsampled_async_child_works_as_a_current_span():
+    span = UnSampledSpan(_recording_native(), span_id=7777)
+    child = span.new_async_span("bg")
+
+    with child:
+        assert current_span() is child
+        with child.new_span_event("step") as event:
+            assert event is _NULL_SPAN_EVENT
+    assert current_span() is None
+
+    # Its own asyncio-task fork shares itself (no native state to protect);
+    # a detached view is a fresh instance so foreign threads never share
+    # activation tokens.
+    assert child._fork_for_async_task(task=object()) is child
+    grandchild_view = child._detached_context_span()
+    assert type(grandchild_view) is UnSampledAsyncSpan
+    assert grandchild_view is not child
+
+
+def test_async_child_of_a_noop_wrapper_propagates_nothing():
+    # Span id 0 is the probe for a wrapper built around a native *noop* span
+    # (test doubles, direct construction): nothing may be propagated, from the
+    # span or from its children.
+    span = UnSampledSpan(_recording_native(span_id=0), span_id=0)
+    assert tuple(span.inject_context_items()) == ()
+    child = span.new_async_span("bg")
+    assert type(child) is UnSampledAsyncSpan
+    assert tuple(child.inject_context_items()) == ()
+    assert tuple(child.new_async_span("bg2").inject_context_items()) == ()
 
 
 def test_unsampled_event_errors_are_dropped_and_collect_no_callstack(

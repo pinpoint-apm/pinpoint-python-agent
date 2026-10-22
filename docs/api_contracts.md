@@ -156,6 +156,17 @@ Rules that follow:
   `Pinpoint-Sampled: s0`, which tells downstream agents not to trace the
   request. Skipping injection makes downstream treat the call as a brand-new
   transaction and produces broken partial traces.
+- **Background work of an unsampled request is not traced downstream either.**
+  `new_async_span()` on an `UnSampledSpan` — and the implicit asyncio-task fork
+  and the detached view a copied thread context resolves to — returns an
+  `UnSampledAsyncSpan`, not a `_NullSpan`. It is not a transaction: no native
+  lifetime, no active-request entry, no URL statistics or response time,
+  errors dropped, `end()` a cheap idempotent no-op. It keeps the parent's
+  `span_id` and nothing else of it, so it may outlive the parent and be used
+  on another thread, and `propagator.inject_items` on it (and on its own
+  children) still yields `Pinpoint-Sampled: s0`. A `_NullSpan`'s children stay
+  pure no-ops that inject nothing, which is correct for a disabled agent or an
+  excluded URL: a proxy then passes the inbound Pinpoint headers on untouched.
 - Still call `end()` on unsampled spans (the context-manager forms do) — it
   releases the native lifecycle registration and records response-time and
   URL statistics, which unsampled requests dominate when sampling is on.
@@ -181,6 +192,11 @@ Its contracts:
   (done-callbacks, finalizers) is safe; the high-level helpers install these
   for you, covering cancellation and never-started threads.
 - The child follows the same single-thread rule on its own thread.
+- **Create the child whether or not the parent is sampled**, and inject on
+  its outbound calls as usual: an unsampled parent hands out an
+  `UnSampledAsyncSpan` whose `inject_items` writes `s0`, so the downstream
+  service does not start a trace of its own
+  ([§6](#6-unsampled-and-no-op-spans-are-deliberately-silent)).
 - The child inherits the parent's resolved config generation, including its
   callstack-capture flag. A reload between child creation and execution cannot
   change that flag; implicit asyncio-task forks follow the same rule.

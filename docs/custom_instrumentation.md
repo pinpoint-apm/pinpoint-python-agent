@@ -769,6 +769,12 @@ untracked.
   into the calling task.
 - Threads do **not** inherit contextvars; the worker's `with async_span:`
   installs the async span on the worker thread's context.
+- Create the async span whether or not the parent is sampled, and inject on
+  its outbound calls as usual. An unsampled parent hands out an
+  `UnSampledAsyncSpan` that records nothing and is not counted as a request,
+  but whose `propagator.inject_items` still writes `Pinpoint-Sampled: s0`, so
+  the downstream service does not start a trace of its own
+  ([API Contracts §6](api_contracts.md#6-unsampled-and-no-op-spans-are-deliberately-silent)).
 - A contextvars copy into a framework threadpool resolves to a detached no-op
   view, so instrumentation must hand the worker a linked async child explicitly.
   The bundled Starlette/FastAPI `run_in_threadpool` and asgiref `sync_to_async`

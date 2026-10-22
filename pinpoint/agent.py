@@ -957,7 +957,7 @@ class _NullSpan(Span):  # type: ignore[misc]
     Handed out wherever a span-shaped object must exist but nothing may be
     recorded: the :class:`_NullAgent` fallback when native init failed, the
     detached context views given to foreign threads, the async children of
-    ended or unsampled spans, and every request the native side answered with
+    ended sampled spans, and every request the native side answered with
     a noop span — a url/method excluded by the HTTP filters, a disabled agent,
     a failed admission (``Agent.new_span`` recognizes those by their span id of
     0). It owns no native handle, so every method — including ``end()`` — is a
@@ -966,7 +966,8 @@ class _NullSpan(Span):  # type: ignore[misc]
     Transactions the native agent *decided* not to sample are not this class:
     an unsampled span registers an active span, keeps a URL-stat entry and
     propagates ``s0``, so it owns a native lifetime and is wrapped in
-    :class:`UnSampledSpan` instead.
+    :class:`UnSampledSpan` instead; its async children are
+    :class:`UnSampledAsyncSpan`, which keep propagating ``s0``.
     """
 
     def __init__(self) -> None:
@@ -1064,7 +1065,11 @@ class UnSampledSpan(_NullSpan):  # type: ignore[misc]
       them would skew URL stats;
     * ``span_id`` is the real native span id; ``trace_id`` stays ``""``;
     * :func:`pinpoint.propagator.inject_items` propagates
-      ``Pinpoint-Sampled: s0`` downstream, built here without a native call.
+      ``Pinpoint-Sampled: s0`` downstream, built here without a native call;
+    * :meth:`new_async_span`, the implicit asyncio-task fork and the detached
+      view for a copied thread context hand out an
+      :class:`UnSampledAsyncSpan`, which records nothing but keeps
+      propagating ``s0`` and may outlive this span.
     """
 
     def __init__(self, native_span: _native.Span,
@@ -1142,6 +1147,23 @@ class UnSampledSpan(_NullSpan):  # type: ignore[misc]
             return ()
         return ((HEADER_SAMPLED, "s0"),)
 
+    # ---- async children ----------------------------------------------------
+    # The unsampled decision travels with every child, as it does in the
+    # native agent (pinpoint-cpp-agent #102): a pure _NullSpan here injected
+    # nothing from background work, so the downstream agent started a trace of
+    # its own and sampled it by itself. The child is handed out whether or not
+    # this span has ended, and holds only the span id, so it may outlive it.
+    def new_async_span(self, operation):  # type: ignore[override]
+        return UnSampledAsyncSpan(self._span_id)
+
+    def _fork_for_async_task(self, task):  # type: ignore[override]
+        # Not ``self``: an asyncio task may run on after the request ended,
+        # and this span stops injecting at end().
+        return UnSampledAsyncSpan(self._span_id)
+
+    def _detached_context_span(self):  # type: ignore[override]
+        return UnSampledAsyncSpan(self._span_id)
+
     def end(self) -> None:  # type: ignore[override]
         with self._native_lock:
             if self._ended:
@@ -1161,6 +1183,46 @@ class UnSampledSpan(_NullSpan):  # type: ignore[misc]
                     url_pattern, method, int(status_code), error_verdicts)
             except Exception:  # noqa: BLE001
                 _log.debug("end_span failed", exc_info=True)
+
+
+class UnSampledAsyncSpan(_NullSpan):  # type: ignore[misc]
+    """Async child of an :class:`UnSampledSpan`.
+
+    The Python counterpart of the native ``UnsampledAsyncSpan``. It is not a
+    transaction: it owns no native handle, registers no active request,
+    records no URL statistics or response time, drops errors, hands out the
+    shared :data:`_NULL_SPAN_EVENT`, and ``end()`` is the inherited no-op.
+    What it keeps is the sampling decision: ``span_id`` is the parent's, and
+    :meth:`inject_context_items` writes ``Pinpoint-Sampled: s0`` so an outbound
+    call made from background work of an unsampled request is not traced
+    downstream either. It holds nothing else of the parent, so it may outlive
+    it and be used and ended on another thread. Its own async children and
+    detached views are the same class. One allocation per child.
+    """
+
+    def __init__(self, span_id: int | None) -> None:
+        _NullSpan.__init__(self)
+        self._span_id = span_id
+        self._span_id_str = None
+
+    span_id = Span.span_id
+    span_id_str = Span.span_id_str
+
+    def new_async_span(self, operation):  # type: ignore[override]
+        return UnSampledAsyncSpan(self._span_id)
+
+    def _detached_context_span(self):  # type: ignore[override]
+        return UnSampledAsyncSpan(self._span_id)
+
+    # _fork_for_async_task keeps _NullSpan's ``return self``: there is no
+    # native state to protect and injection is stateless.
+
+    def inject_context_items(self):  # type: ignore[override]
+        # Span id 0 marks the child of a wrapper around a native *noop* span
+        # (see UnSampledSpan.inject_context_items): propagate nothing there.
+        if not self._span_id:
+            return ()
+        return ((HEADER_SAMPLED, "s0"),)
 
 
 class _NullSpanEvent:

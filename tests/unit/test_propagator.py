@@ -169,6 +169,16 @@ def test_unsampled_span_injects_only_the_drop_marker():
     assert tuple(inject_items(span)) == ((HEADER_SAMPLED, "s0"),)
 
 
+def test_unsampled_async_child_injects_only_the_drop_marker():
+    # Background work of an unsampled request must not be traced downstream
+    # either (pinpoint-cpp-agent #102).
+    span = UnSampledSpan(FakeNativeSpan(), span_id=42)
+    child = span.new_async_span("bg")
+    assert tuple(inject_items(child)) == ((HEADER_SAMPLED, "s0"),)
+    span.end()
+    assert tuple(inject_items(child)) == ((HEADER_SAMPLED, "s0"),)
+
+
 def test_noop_native_span_injects_nothing():
     # A native *noop* span (disabled agent, malformed inbound trace id) is
     # also wrapped as UnSampledSpan but carries span id 0 — it must not tell
