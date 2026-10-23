@@ -194,6 +194,7 @@ def main() -> None:
     # in pinpoint-cpp-agent/test/it_test/pinpoint-config.yaml.
     pinpoint.init(
         application_name="python-demo-aiohttp",
+        uid_version="v3",
         agent_name="python-demo-aiohttp-1",
         server_info="aiohttp",
         http_server_record_request_header=[

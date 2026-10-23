@@ -149,6 +149,7 @@ def main() -> None:
 
     pinpoint.init(
         application_name="python-demo-pyramid",
+        uid_version="v3",
         agent_name="python-demo-pyramid-1",
         server_info="Pyramid",
         # HTTP header tracing — same shape as Http.{Server,Client}.Record*Header

@@ -38,7 +38,7 @@ app. Hence a dedicated hook.
 No code changes and no middleware registration:
 
 ```bash
-pinpoint-run --app-name my-app --collector localhost -- \
+pinpoint-run --app-name my-app --service-name my-service --collector localhost -- \
     uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 

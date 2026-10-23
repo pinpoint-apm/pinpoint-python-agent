@@ -125,6 +125,7 @@ def main() -> None:
 
     pinpoint.init(
         application_name="demo-pika-producer",
+        uid_version="v3",
         agent_name="demo-pika-producer-1",
         server_info="Pika Producer",
     )

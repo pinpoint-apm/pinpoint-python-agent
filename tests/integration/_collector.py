@@ -377,6 +377,7 @@ def start_native_agent(app_name: str, extra_yaml: str = ""):
     config = f"""
 Enable: true
 ApplicationName: "{app_name}"
+ServiceName: "unit-test-service"
 Collector:
   Host: "127.0.0.1"
   AgentPort: {collector.port}

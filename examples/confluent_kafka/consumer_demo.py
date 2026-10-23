@@ -87,6 +87,7 @@ def main() -> None:
 
     pinpoint.init(
         application_name="demo-cfkafka-consumer",
+        uid_version="v3",
         agent_name="demo-cfkafka-consumer-1",
         server_info="Confluent Kafka Consumer",
     )

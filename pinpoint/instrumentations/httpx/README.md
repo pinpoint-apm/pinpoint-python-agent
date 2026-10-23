@@ -31,7 +31,7 @@ through them.
 No code changes:
 
 ```bash
-pinpoint-run --app-name my-app --collector localhost -- python app.py
+pinpoint-run --app-name my-app --service-name my-service --collector localhost -- python app.py
 ```
 
 ```python

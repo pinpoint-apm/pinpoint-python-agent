@@ -30,7 +30,7 @@ so every inbound request becomes a Pinpoint transaction.
 No code changes — launch the app under `pinpoint-run`:
 
 ```bash
-pinpoint-run --app-name my-app --collector localhost -- python app.py
+pinpoint-run --app-name my-app --service-name my-service --collector localhost -- python app.py
 ```
 
 ```python

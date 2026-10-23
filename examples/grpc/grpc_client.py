@@ -34,6 +34,7 @@ Or manually:
     import pinpoint
     pinpoint.init(
         application_name="demo-grpc-client",
+        uid_version="v3",
         agent_name="demo-grpc-client",
         server_info="gRPC Client",
     )
@@ -145,6 +146,7 @@ def main() -> None:
 
     pinpoint.init(
         application_name="python-demo-grpc-client",
+        uid_version="v3",
         agent_name="python-demo-grpc-client-1",
         server_info="gRPC Client",
     )

@@ -52,7 +52,7 @@ See the [Development Guide](docs/development.md) for building the extension in p
 The launcher starts the agent before any of your code runs and activates auto-instrumentation for every supported library your application imports:
 
 ```bash
-pinpoint-run --app-name my-service --agent-name my-service-web \
+pinpoint-run --app-name my-app --service-name my-service --agent-name my-service-web \
     --collector localhost -- python my_app.py
 ```
 
@@ -71,7 +71,8 @@ import pinpoint
 import pinpoint.autoload
 
 pinpoint.init(
-    application_name="my-service",   # required
+    application_name="my-app",       # required
+    service_name="my-service",       # required for v4 (the default)
     agent_name="my-service-web",     # optional display label
     server_info="Flask",             # server metadata shown in the UI
     collector_host="localhost",

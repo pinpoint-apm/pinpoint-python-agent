@@ -66,7 +66,8 @@ nothing when the agent is missing or disabled.
 import pinpoint
 
 pinpoint.init(
-    application_name="my-service",
+    application_name="my-app",
+    service_name="my-service",
     agent_name="my-service-web",
     server_info="Python Application",
     collector_host="collector.internal",
@@ -77,7 +78,7 @@ Or via the launcher, which prepends a `sitecustomize.py` to `PYTHONPATH` so the
 agent is initialized before any user code runs:
 
 ```bash
-pinpoint-run --app-name my-service --collector collector.internal -- python app.py
+pinpoint-run --app-name my-app --service-name my-service --collector collector.internal -- python app.py
 ```
 
 Every configuration option is reachable in three ways: kwargs to

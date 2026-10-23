@@ -32,7 +32,7 @@ loads automatically alongside this one.
 No code changes and no `MIDDLEWARE` entry. Launch under `pinpoint-run`:
 
 ```bash
-pinpoint-run --app-name my-app --collector localhost -- \
+pinpoint-run --app-name my-app --service-name my-service --collector localhost -- \
     gunicorn -w 4 myproject.wsgi:application
 ```
 

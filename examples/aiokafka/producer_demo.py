@@ -105,6 +105,7 @@ def main() -> None:
 
     pinpoint.init(
         application_name="demo-aiokafka-producer",
+        uid_version="v3",
         agent_name="demo-aiokafka-producer-1",
         server_info="aiokafka Producer",
     )

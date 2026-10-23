@@ -24,6 +24,7 @@ Or manually:
     import pinpoint
     pinpoint.init(
         application_name="demo-upstream",
+        uid_version="v3",
         agent_name="demo-upstream",
         server_info="Flask Upstream",
     )
@@ -52,6 +53,7 @@ if __name__ == "__main__":
 
     pinpoint.init(
         application_name="python-demo-upstream",
+        uid_version="v3",
         agent_name="python-demo-upstream-1",
         server_info="Flask Upstream",
         # Header tracing — see flask_demo.py for the equivalent env vars.

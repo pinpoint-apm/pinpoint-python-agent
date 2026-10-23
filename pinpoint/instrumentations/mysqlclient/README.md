@@ -34,7 +34,7 @@ No code changes. For Django, this is the integration that traces your ORM
 queries:
 
 ```bash
-pinpoint-run --app-name my-app --collector localhost -- \
+pinpoint-run --app-name my-app --service-name my-service --collector localhost -- \
     gunicorn -w 4 myproject.wsgi:application
 ```
 

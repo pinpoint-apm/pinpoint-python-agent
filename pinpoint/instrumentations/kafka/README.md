@@ -64,7 +64,7 @@ for tp, records in consumer.poll(500).items():
 No code changes for the delivery spans themselves:
 
 ```bash
-pinpoint-run --app-name my-app --collector localhost -- python consumer.py
+pinpoint-run --app-name my-app --service-name my-service --collector localhost -- python consumer.py
 ```
 
 ```python

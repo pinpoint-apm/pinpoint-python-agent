@@ -41,6 +41,7 @@ import pinpoint
 
 pinpoint.init(
     application_name="MyApplication",   # required
+    service_name="MyService",   # required for v4 (the default)
     agent_name="my-agent-name",         # optional label; agent id is auto-generated
     collector_host="localhost",         # your Pinpoint collector host
     sampling_type="PERCENT",
@@ -72,6 +73,7 @@ to select a `Profile.<name>` section). The file uses the native YAML keys and
 
 ```yaml
 ApplicationName: "MyApplication"
+ServiceName: "MyService"
 Collector:
   Host: "localhost"
 Sampling:
@@ -92,11 +94,11 @@ The launcher initializes the agent before any of your code runs and activates
 auto-instrumentation for every supported library your app imports:
 
 ```bash
-pinpoint-run --app-name my-first-app --collector localhost -- python my_app.py
+pinpoint-run --app-name my-first-app --service-name MyService --collector localhost -- python my_app.py
 ```
 
 ```bash
-pinpoint-run --app-name my-first-app --collector localhost -- \
+pinpoint-run --app-name my-first-app --service-name MyService --collector localhost -- \
     gunicorn -w 4 myapp:app          # prefork servers: see the note below
 ```
 
@@ -112,6 +114,7 @@ import pinpoint.autoload
 
 pinpoint.init(
     application_name="my-first-app",
+    service_name="MyService",
     server_info="Flask",             # server metadata label shown in the UI
     collector_host="localhost",
 )

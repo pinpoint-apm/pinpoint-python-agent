@@ -677,6 +677,7 @@ def agent_start() -> dict[str, Any]:
     pinpoint.init(
         application_name=os.environ.get("PINPOINT_PY_APPLICATION_NAME", "py-e2e-test-server"),
         agent_name=os.environ.get("PINPOINT_PY_AGENT_NAME", "py-e2e-test-agent"),
+        uid_version=os.environ.get("PINPOINT_PY_UID_VERSION", "v3"),
         server_info=os.environ.get("PINPOINT_PY_SERVER_INFO", "FastAPI IT Test Server"),
     )
     return {"endpoint": "agent/start", "enabled": bool(
@@ -741,6 +742,7 @@ def _init_agent_from_env() -> None:
 
     _default("PINPOINT_PY_APPLICATION_NAME", "py-e2e-test-server")
     _default("PINPOINT_PY_AGENT_NAME", "py-e2e-test-agent")
+    _default("PINPOINT_PY_UID_VERSION", "v3")
     _default("PINPOINT_PY_LOG_LEVEL", "info")
     _default("PINPOINT_PY_SAMPLING_TYPE", "COUNTER")
     _default("PINPOINT_PY_SAMPLING_COUNTER_RATE", "100")

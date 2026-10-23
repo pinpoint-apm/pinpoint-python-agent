@@ -108,7 +108,7 @@ between tests):
 ```python
 pinpoint.shutdown()          # stop tracing; app keeps working
 # ... later ...
-pinpoint.init(application_name="my-service", collector_host="collector-host")
+pinpoint.init(application_name="my-app", service_name="my-service", collector_host="collector-host")
 ```
 
 Points to keep in mind:
@@ -130,8 +130,9 @@ Points to keep in mind:
 
 **Symptoms:** the application runs but no data appears in the Pinpoint UI.
 
-1. **Check `application_name`** — without it (or a config file) the agent is
-   disabled at init, with a Python-side warning.
+1. **Check `application_name` and `service_name`** — without `application_name` (or a config file) the agent is
+   disabled at init, with a Python-side warning; without `service_name` the default
+   v4 identity fails to resolve (native log: `failed to resolve agent identity`).
 2. **Read the logs** — see [Verifying Agent Startup](#verifying-agent-startup);
    remember the default level hides everything below `warn`.
 3. **Verify collector connectivity** — see

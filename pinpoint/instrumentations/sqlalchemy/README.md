@@ -47,7 +47,7 @@ never-ended event per statement.
 No code changes and no `event.listen` of your own:
 
 ```bash
-pinpoint-run --app-name my-app --collector localhost -- python app.py
+pinpoint-run --app-name my-app --service-name my-service --collector localhost -- python app.py
 ```
 
 ```python

@@ -197,6 +197,7 @@ def main() -> None:
 
     pinpoint.init(
         application_name=f"python-demo-falcon-{name_suffix}",
+        uid_version="v3",
         agent_name=f"python-demo-falcon-{name_suffix}-1",
         server_info=f"Falcon {name_suffix.upper()}",
         # HTTP header tracing — see pinpoint-cpp-agent's pinpoint-config.yaml.

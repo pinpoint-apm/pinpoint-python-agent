@@ -86,6 +86,7 @@ def main() -> None:
 
     pinpoint.init(
         application_name="demo-pika-consumer",
+        uid_version="v3",
         agent_name="demo-pika-consumer-1",
         server_info="Pika Consumer",
     )

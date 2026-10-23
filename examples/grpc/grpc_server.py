@@ -29,6 +29,7 @@ Or manually:
     import pinpoint
     pinpoint.init(
         application_name="demo-grpc-server",
+        uid_version="v3",
         agent_name="demo-grpc-server",
         server_info="gRPC Server",
     )
@@ -102,6 +103,7 @@ if __name__ == "__main__":
 
     pinpoint.init(
         application_name="python-demo-grpc-server",
+        uid_version="v3",
         agent_name="python-demo-grpc-server-1",
         server_info="gRPC Server",
     )

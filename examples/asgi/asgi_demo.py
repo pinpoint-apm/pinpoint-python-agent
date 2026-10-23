@@ -122,6 +122,7 @@ def main() -> None:
     # the YAML keys mirrored from pinpoint-cpp-agent's pinpoint-config.yaml.
     pinpoint.init(
         application_name="python-demo-asgi",
+        uid_version="v3",
         agent_name="python-demo-asgi-1",
         server_info="ASGI",
         http_server_record_request_header=[

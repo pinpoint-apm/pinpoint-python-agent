@@ -1060,7 +1060,8 @@ from pinpoint import agent as agent_mod
 
 # Collector is intentionally unreachable; we only assert the child ends up
 # with the contract-mandated agent object and does not crash.
-pinpoint.init(application_name="fork-e2e", collector_host="127.0.0.1",
+pinpoint.init(application_name="fork-e2e", service_name="fork-e2e-service",
+              collector_host="127.0.0.1",
               log_level="ERROR", prefork={prefork})
 parent_native = agent_mod.get_agent()._native
 

@@ -113,6 +113,7 @@ def main() -> None:
     # _RECORD_REQUEST_COOKIE, _RECORD_RESPONSE_HEADER, PINPOINT_PY_HTTP_CLIENT_RECORD_*.
     pinpoint.init(
         application_name="python-demo-wsgi",
+        uid_version="v3",
         agent_name="python-demo-wsgi-1",
         server_info="WSGI",
         http_server_record_request_header=[

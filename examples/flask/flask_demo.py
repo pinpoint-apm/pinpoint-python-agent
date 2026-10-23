@@ -33,7 +33,7 @@ services. Start the upstream first so /ping has somewhere to call:
 
 Or manually:
     import pinpoint
-    pinpoint.init(application_name="demo", agent_name="demo-frontend", server_info="Flask")
+    pinpoint.init(application_name="demo", uid_version="v3", agent_name="demo-frontend", server_info="Flask")
     pinpoint.autoload.autoload()
 
 The upstream URL is overridable for split-host deployments:
@@ -435,6 +435,7 @@ if __name__ == "__main__":
     # ``Http.Server.RecordRequestHeader`` etc.
     pinpoint.init(
         application_name="python-demo",
+        uid_version="v3",
         agent_name="python-flask-demo-1",
         server_info="Flask",
         http_server_record_request_header=[

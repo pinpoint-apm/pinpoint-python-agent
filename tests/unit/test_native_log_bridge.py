@@ -284,7 +284,8 @@ for key in list(os.environ):
         os.environ.pop(key)
 import pinpoint
 agent = pinpoint.init(
-    application_name='handler-shutdown', native_log_to_python=True,
+    application_name='handler-shutdown', service_name='handler-shutdown',
+    native_log_to_python=True,
     collector_host='127.0.0.1', collector_agent_port=1,
     collector_span_port=1, collector_stat_port=1, log_level='INFO')
 called = []

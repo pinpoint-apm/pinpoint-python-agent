@@ -67,7 +67,7 @@ def test_new_span_extracts_inbound_context(native_agent):
     # settings the Python layer records itself at 15-18.
     assert revision == 1
     assert native_agent.get_config_snapshot() == (
-        "unit-native-gil", 1700, "", 7, 11,
+        "unit-native-gil", 1700, "unit-test-service", 7, 11,
         ["X-Test"], [], [], [], [], [],
         1,
         # Sql.TraceBindValue as resolved above. Note the native default is

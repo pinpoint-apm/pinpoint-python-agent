@@ -31,7 +31,7 @@ per-endpoint span event.
 No code changes — no `add_middleware` call needed:
 
 ```bash
-pinpoint-run --app-name my-app --collector localhost -- \
+pinpoint-run --app-name my-app --service-name my-service --collector localhost -- \
     uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 

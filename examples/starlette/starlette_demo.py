@@ -190,6 +190,7 @@ def main() -> None:
 
     pinpoint.init(
         application_name="python-demo-starlette",
+        uid_version="v3",
         agent_name="python-demo-starlette-1",
         server_info="Starlette",
         # HTTP header tracing — same shape as Http.{Server,Client}.Record*Header

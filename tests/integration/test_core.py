@@ -106,6 +106,7 @@ def core_agent(collector, monkeypatch):
         cfg = dict(
             application_name=_APP_NAME,
             agent_name="core-it-agent",
+            service_name="core-it-service",
             collector_host="127.0.0.1",
             collector_agent_port=collector.port,
             collector_span_port=collector.port,
@@ -176,6 +177,7 @@ def _write_callstack_config(path, collector, *, enabled: bool,
                             throughput: int = 1000) -> None:
     path.write_text(textwrap.dedent(f"""\
         ApplicationName: "{_APP_NAME}"
+        ServiceName: "core-it-service"
         AgentName: "callstack-file-agent"
         EnableConfigFileWatcher: true
         EnableCallstackTrace: {str(enabled).lower()}
@@ -295,6 +297,7 @@ def test_config_file_option_and_watcher_reconfigure_sampling(
         request_header = "HEADERS-ALL" if counter_rate == 0 else "X-Allowed"
         config_path.write_text(textwrap.dedent(f"""\
             ApplicationName: "{_APP_NAME}"
+            ServiceName: "core-it-service"
             AgentName: "file-config-agent"
             EnableConfigFileWatcher: true
             Collector:
@@ -379,6 +382,7 @@ def test_error_verdict_uses_the_span_captured_config_generation(
                         if ignore else "[]")
         config_path.write_text(textwrap.dedent(f"""\
             ApplicationName: "{_APP_NAME}"
+            ServiceName: "core-it-service"
             AgentName: "error-policy-file-agent"
             EnableConfigFileWatcher: true
             Collector:
@@ -1370,6 +1374,7 @@ _FORK_SCRIPT_COMMON = textwrap.dedent("""\
     pinpoint.init(
         application_name={app_name!r},
         agent_name={agent_name!r},
+        service_name="core-it-service",
         collector_host="127.0.0.1",
         collector_agent_port={port},
         collector_span_port={port},
@@ -1667,7 +1672,8 @@ def _write_user_proxy_config(path, collector, names, **overrides):
     from pinpoint.config import Config
 
     cfg = dict(
-        application_name=_APP_NAME, collector_host="127.0.0.1",
+        application_name=_APP_NAME, service_name="core-it-service",
+        collector_host="127.0.0.1",
         collector_agent_port=collector.port, collector_span_port=collector.port,
         collector_stat_port=collector.port, stat_enabled=False,
         span_batch_flush_interval_ms=100, enable_config_file_watcher=True,
@@ -1807,7 +1813,8 @@ def _write_http_recording_config(path, collector, **overrides):
     from pinpoint.config import Config
 
     cfg = dict(
-        application_name=_APP_NAME, collector_host="127.0.0.1",
+        application_name=_APP_NAME, service_name="core-it-service",
+        collector_host="127.0.0.1",
         collector_agent_port=collector.port, collector_span_port=collector.port,
         collector_stat_port=collector.port, stat_enabled=False,
         span_batch_flush_interval_ms=100, enable_config_file_watcher=True,

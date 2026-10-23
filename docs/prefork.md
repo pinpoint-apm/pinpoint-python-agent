@@ -56,7 +56,8 @@ import pinpoint
 
 def on_starting(server):
     pinpoint.init(
-        application_name="my-service",
+        application_name="my-app",
+        service_name="my-service",
         collector_host="collector-host",
         prefork=True,
     )
@@ -64,7 +65,7 @@ def on_starting(server):
 
 ```bash
 # Or with pinpoint-run (which always initializes in the master):
-PINPOINT_PY_PREFORK=1 pinpoint-run --app-name my-service \
+PINPOINT_PY_PREFORK=1 pinpoint-run --app-name my-app --service-name my-service \
     --collector collector-host -- gunicorn -w 4 myapp:app
 ```
 

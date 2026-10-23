@@ -220,6 +220,7 @@ def main() -> None:
     # PINPOINT_PY_HTTP_{SERVER,CLIENT}_RECORD_{REQUEST,RESPONSE}_{HEADER,COOKIE}.
     pinpoint.init(
         application_name="python-demo-django",
+        uid_version="v3",
         agent_name="python-demo-django-1",
         server_info="Django",
         http_server_record_request_header=[

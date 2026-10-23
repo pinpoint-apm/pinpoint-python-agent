@@ -337,6 +337,7 @@ def main() -> None:
     # PINPOINT_PY_HTTP_CLIENT_RECORD_REQUEST_HEADER, _RECORD_RESPONSE_HEADER.
     pinpoint.init(
         application_name="python-demo-fastapi",
+        uid_version="v3",
         agent_name="python-demo-fastapi-1",
         server_info="FastAPI",
         http_server_record_request_header=[

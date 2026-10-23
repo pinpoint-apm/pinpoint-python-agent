@@ -40,7 +40,7 @@ import pinpoint
 import pinpoint.autoload
 from pinpoint.instrumentations.asgi import PinpointASGIMiddleware
 
-pinpoint.init(application_name="my-app", collector_host="localhost")
+pinpoint.init(application_name="my-app", service_name="my-service", collector_host="localhost")
 pinpoint.autoload.autoload()
 
 async def app(scope, receive, send):

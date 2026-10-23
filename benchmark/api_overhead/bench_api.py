@@ -277,6 +277,7 @@ def run_worker(args: argparse.Namespace) -> int:
     # peak RSS reflects this setting, not a shipped default.
     agent = pinpoint.init(
         application_name="py-api-overhead",
+        uid_version="v3",
         collector_host=args.host,
         collector_agent_port=args.collector_port,
         collector_span_port=args.collector_port,

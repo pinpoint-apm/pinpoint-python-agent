@@ -84,6 +84,7 @@ def main() -> None:
 
     pinpoint.init(
         application_name="demo-kafka-consumer",
+        uid_version="v3",
         agent_name="demo-kafka-consumer-1",
         server_info="Kafka Consumer",
     )

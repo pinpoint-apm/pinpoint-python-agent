@@ -127,6 +127,7 @@ def main() -> None:
 
     pinpoint.init(
         application_name="demo-aio_pika-consumer",
+        uid_version="v3",
         agent_name="demo-aio_pika-cons-1",
         server_info="aio-pika Consumer",
     )

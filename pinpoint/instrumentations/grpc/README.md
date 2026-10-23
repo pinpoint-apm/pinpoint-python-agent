@@ -34,7 +34,7 @@ measures the call, not the consumer's iteration.
 No code changes on either side:
 
 ```bash
-pinpoint-run --app-name my-service --collector localhost -- python server.py
+pinpoint-run --app-name my-app --service-name my-service --collector localhost -- python server.py
 ```
 
 ```python

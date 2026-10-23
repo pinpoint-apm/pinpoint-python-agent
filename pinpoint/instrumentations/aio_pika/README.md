@@ -42,7 +42,7 @@ Both paths read `message.headers` for upstream Pinpoint context.
 ## Usage
 
 ```bash
-pinpoint-run --app-name my-app --collector localhost -- python consumer.py
+pinpoint-run --app-name my-app --service-name my-service --collector localhost -- python consumer.py
 ```
 
 ```python

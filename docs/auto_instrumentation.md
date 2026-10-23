@@ -19,7 +19,7 @@ hook, so it fires the moment its target library is imported — and a library yo
 app never imports costs nothing.
 
 ```bash
-pinpoint-run --app-name my-app --collector localhost -- python app.py
+pinpoint-run --app-name my-app --service-name my-service --collector localhost -- python app.py
 ```
 
 ```python
@@ -27,7 +27,7 @@ pinpoint-run --app-name my-app --collector localhost -- python app.py
 import pinpoint
 import pinpoint.autoload
 
-pinpoint.init(application_name="my-app", collector_host="localhost")
+pinpoint.init(application_name="my-app", service_name="my-service", collector_host="localhost")
 pinpoint.autoload.autoload()
 ```
 

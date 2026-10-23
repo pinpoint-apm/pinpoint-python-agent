@@ -97,6 +97,7 @@ def main() -> None:
     # Agent name limit is 24 chars; the demo names hit that ceiling.
     pinpoint.init(
         application_name="demo-kafka-producer",
+        uid_version="v3",
         agent_name="demo-kafka-producer-1",
         server_info="Kafka Producer",
     )

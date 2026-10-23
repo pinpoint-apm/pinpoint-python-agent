@@ -406,6 +406,7 @@ def test_yaml_roundtrips_through_native_yaml_cpp():
     yaml = Config(
         application_name=app_name,
         agent_name="roundtrip-agent",
+        service_name="roundtrip-service",
         collector_host="127.0.0.1",
         collector_agent_port=collector.port,
         collector_span_port=collector.port,

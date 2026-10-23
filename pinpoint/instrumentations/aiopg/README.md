@@ -29,7 +29,7 @@ knows how to read psycopg2's `get_dsn_parameters()`.
 No code changes:
 
 ```bash
-pinpoint-run --app-name my-app --collector localhost -- python app.py
+pinpoint-run --app-name my-app --service-name my-service --collector localhost -- python app.py
 ```
 
 ```python

@@ -39,7 +39,7 @@ No code changes. Clients created before `autoload()` runs also work — the
 listener is registered globally with pymongo, not per client.
 
 ```bash
-pinpoint-run --app-name my-app --collector localhost -- python app.py
+pinpoint-run --app-name my-app --service-name my-service --collector localhost -- python app.py
 ```
 
 ```python

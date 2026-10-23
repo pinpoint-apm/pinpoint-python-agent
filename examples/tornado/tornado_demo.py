@@ -85,6 +85,7 @@ def main() -> None:
 
     pinpoint.init(
         application_name="python-demo-tornado",
+        uid_version="v3",
         agent_name="python-demo-tornado-1",
         server_info="Tornado",
         # See pinpoint-cpp-agent/test/it_test/pinpoint-config.yaml for the

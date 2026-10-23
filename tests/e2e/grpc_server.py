@@ -90,9 +90,11 @@ def _init_agent_from_env() -> None:
     os.environ.setdefault(
         "PINPOINT_PY_APPLICATION_NAME", "py-e2e-grpc-server")
     os.environ.setdefault("PINPOINT_PY_AGENT_NAME", "py-e2e-grpc-agent")
+    os.environ.setdefault("PINPOINT_PY_UID_VERSION", "v3")
     pinpoint.init(
         application_name=os.environ["PINPOINT_PY_APPLICATION_NAME"],
         agent_name=os.environ["PINPOINT_PY_AGENT_NAME"],
+        uid_version=os.environ["PINPOINT_PY_UID_VERSION"],
         server_info=os.environ.get("PINPOINT_PY_SERVER_INFO", "gRPC IT Test Server"),
     )
     autoload()

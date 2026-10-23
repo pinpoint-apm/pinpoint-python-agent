@@ -44,6 +44,7 @@ def _config(port, extra=""):
     return f"""
 Enable: true
 ApplicationName: "{_APP}"
+ServiceName: "unit-test-service"
 Collector:
   Host: "127.0.0.1"
   AgentPort: {port}

@@ -46,7 +46,7 @@ latency-sensitive loop, budget for that pause or cap the batch size.
 ## Usage
 
 ```bash
-pinpoint-run --app-name my-app --collector localhost -- python consumer.py
+pinpoint-run --app-name my-app --service-name my-service --collector localhost -- python consumer.py
 ```
 
 ```python

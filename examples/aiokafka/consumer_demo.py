@@ -118,6 +118,7 @@ def main() -> None:
 
     pinpoint.init(
         application_name="demo-aiokafka-consumer",
+        uid_version="v3",
         agent_name="demo-aiokafka-consumer-1",
         server_info="aiokafka Consumer",
     )

@@ -1026,7 +1026,7 @@ def reload_config(config_yaml: str) -> ConfigReloadResult:
         from pinpoint.config import Config
 
         result = pinpoint.reload_config(
-            Config.from_kwargs(application_name="checkout",
+            Config.from_kwargs(application_name="checkout", service_name="shop",
                                sampling_type="PERCENT",
                                sampling_percent_rate=1).to_yaml())
         if not result:
