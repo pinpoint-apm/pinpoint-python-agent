@@ -79,6 +79,9 @@ _REGISTRY: dict[str, str] = {
     "aiokafka.producer.producer": "pinpoint.instrumentations.aiokafka:instrument",
     "pika.channel": "pinpoint.instrumentations.pika:instrument",
     "aio_pika.exchange": "pinpoint.instrumentations.aio_pika:instrument",
+    # The module that defines ``Task``; every app task class subclasses it, so
+    # a wrapper on its ``apply_async`` is inherited whenever the hook fires.
+    "celery.app.task": "pinpoint.instrumentations.celery:instrument",
     "tornado.web": "pinpoint.instrumentations.tornado:instrument",
     "starlette.applications": "pinpoint.instrumentations.starlette:instrument",
     # ``fastapi.applications``, not ``fastapi.routing``: the instrumentation wraps
