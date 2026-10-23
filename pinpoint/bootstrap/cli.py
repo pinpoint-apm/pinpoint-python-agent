@@ -71,6 +71,9 @@ _FLAGS = {
     "app_name": (
         "PINPOINT_PY_APPLICATION_NAME", str,
         "application name shown in the Pinpoint Web UI"),
+    "service_name": (
+        "PINPOINT_PY_SERVICE_NAME", str,
+        "service the application belongs to (required by the default v4 identity)"),
     "agent_name": (
         "PINPOINT_PY_AGENT_NAME", str,
         "agent display label (defaults to a generated id)"),
