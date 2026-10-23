@@ -142,10 +142,9 @@ A name that fails validation disables the agent: the native side logs
 Python layer passes the values through unchanged, so the error surfaces in the
 native log, not as a Python exception.
 
-The 3-character minimum for `service_name` is enforced by the Pinpoint Web
-service registry and the Java agent, not by the native agent here. A shorter
-name passes local validation but cannot be registered as a service in the
-Pinpoint UI, so treat 3 as the effective minimum.
+The 3-character minimum for `service_name` matches the Java agent and the
+Pinpoint Collector's service registry; the native agent rejects a shorter
+name at startup like any other validation failure.
 
 ---
 
