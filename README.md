@@ -5,7 +5,7 @@
 
 The Python Agent for [Pinpoint APM](https://github.com/pinpoint-apm/pinpoint), an open-source Application Performance Management tool for large-scale distributed systems.
 
-Pinpoint Python Agent enables you to monitor Python applications using Pinpoint. Name your application, start it through `pinpoint-run`, and 35 first-party integrations — web frameworks, HTTP clients, databases, caches, message queues — collect traces, analyze distributed call chains, and visualize service maps in the Pinpoint Web UI, with no changes to your code. The tracing hot path runs in the embedded [pinpoint-cpp-agent](https://github.com/pinpoint-apm/pinpoint-cpp-agent).
+Pinpoint Python Agent enables you to monitor Python applications using Pinpoint. Name your application, start it through `pinpoint-run`, and 36 first-party integrations — web frameworks, HTTP clients, databases, caches, message queues, task queues — collect traces, analyze distributed call chains, and visualize service maps in the Pinpoint Web UI, with no changes to your code. The tracing hot path runs in the embedded [pinpoint-cpp-agent](https://github.com/pinpoint-apm/pinpoint-cpp-agent).
 
 ## Requirements
 
@@ -109,7 +109,7 @@ The [`examples/`](examples) directory holds one subdirectory per integration —
 
 - **Web frameworks** — [flask_demo.py](examples/flask/flask_demo.py) + [flask_upstream.py](examples/flask/flask_upstream.py) (two services: distributed tracing over `requests`, plus four MySQL clients), [django_demo.py](examples/django/django_demo.py), [fastapi_demo.py](examples/fastapi/fastapi_demo.py) (every supported PostgreSQL client), [starlette_demo.py](examples/starlette/starlette_demo.py), [pyramid_demo.py](examples/pyramid/pyramid_demo.py), [falcon_demo.py](examples/falcon/falcon_demo.py) (WSGI and ASGI), [tornado_demo.py](examples/tornado/tornado_demo.py), [aiohttp_demo.py](examples/aiohttp/aiohttp_demo.py) (with `elasticsearch`)
 - **Framework-less apps** — [wsgi_demo.py](examples/wsgi/wsgi_demo.py), [asgi_demo.py](examples/asgi/asgi_demo.py): wrapping an app in the Pinpoint middleware by hand
-- **Message queues** — producer/consumer pairs for [kafka](examples/kafka), [aiokafka](examples/aiokafka), [confluent_kafka](examples/confluent_kafka), [pika](examples/pika) and [aio_pika](examples/aio_pika)
+- **Message queues** — producer/consumer pairs for [kafka](examples/kafka), [aiokafka](examples/aiokafka), [confluent_kafka](examples/confluent_kafka), [pika](examples/pika), [aio_pika](examples/aio_pika) and [celery](examples/celery)
 - **RPC** — [grpc](examples/grpc): client and server, with context propagated across the call
 
 ## Documentation
@@ -118,7 +118,7 @@ The [`examples/`](examples) directory holds one subdirectory per integration —
 |---|---|
 | [Getting Started Guide](docs/getting_started.md) | Step-by-step setup: install, configure, first traced request |
 | [Configuration Guide](docs/config.md) | Every option, as an `init()` kwarg, environment variable and config-file key, with precedence rules |
-| [Auto-Instrumentation Catalog](docs/auto_instrumentation.md) | The 35 supported libraries, what each records, and how to turn one off |
+| [Auto-Instrumentation Catalog](docs/auto_instrumentation.md) | The 36 supported libraries, what each records, and how to turn one off |
 | [Custom Instrumentation Guide](docs/custom_instrumentation.md) | Python API reference: spans, span events, annotations, async hand-offs, distributed tracing |
 | [API Contracts](docs/api_contracts.md) | Threading, end-exactly-once and overflow rules the agent enforces on spans, events and annotations |
 | [Pre-fork Integration Guide](docs/prefork.md) | Running the agent under gunicorn, uWSGI and `multiprocessing` |

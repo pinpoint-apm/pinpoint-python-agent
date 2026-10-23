@@ -1,6 +1,6 @@
 # Auto-Instrumentation Catalog
 
-The agent ships **35 first-party integrations**. Each one lives in its own
+The agent ships **36 first-party integrations**. Each one lives in its own
 package directory under [`pinpoint/instrumentations/`](../pinpoint/instrumentations)
 with a `README.md` next to its source: what it hooks, what ends up in a trace,
 a usage snippet, and its opt-out alias (see [Disabling](#disabling)).
@@ -125,6 +125,7 @@ appear as one distributed trace.
 | [confluent-kafka](../pinpoint/instrumentations/confluent_kafka/README.md) | `confluent_kafka` | delivery only (pull API) | `confluent_kafka` |
 | [pika](../pinpoint/instrumentations/pika/README.md) | `pika.channel` | **the handler** (callback API) | `pika` |
 | [aio-pika](../pinpoint/instrumentations/aio_pika/README.md) | `aio_pika.exchange` | the handler (callback) / delivery only (iterator) | `aio_pika` |
+| [Celery](../pinpoint/instrumentations/celery/README.md) | `celery.app.task` | **the task body** (worker root span per execution) | `celery` |
 
 Where the span covers delivery only, the client hands you a record and returns —
 there is no callback to wrap. Trace the processing yourself:
