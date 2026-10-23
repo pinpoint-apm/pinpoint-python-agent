@@ -104,10 +104,11 @@ linked by the `Pinpoint-*` headers the producer stamps onto the record.
 | [confluent_kafka/](confluent_kafka) — librdkafka, Flask producer | 5007 | `demo.confluent-kafka` | Kafka |
 | [pika/](pika) — sync RabbitMQ, Flask producer | 5007 | exchange `demo.pika.exchange` → queue `demo.pika` | RabbitMQ |
 | [aio_pika/](aio_pika) — asyncio RabbitMQ, FastAPI producer | 5008 | exchange `demo.aio_pika.exchange` → queue `demo.aio_pika` | RabbitMQ |
+| [celery/](celery) — Celery worker, Flask producer | 5009 | queue `demo.celery` | RabbitMQ |
 
 The pika and confluent_kafka producers share port 5007 — set `PORT=` on one of
-them to run both at once. The two RabbitMQ demos also share one broker
-container, so bringing up either tears down the other's.
+them to run both at once. The three RabbitMQ demos also share one broker
+container, so bringing up any of them tears down the others'.
 
 Brokers are configured with `KAFKA_BOOTSTRAP` / `KAFKA_TOPIC` /
 `KAFKA_GROUP` and `RABBITMQ_URL` / `RABBITMQ_EXCHANGE` / `RABBITMQ_QUEUE`.

@@ -228,6 +228,8 @@ demo_main() {
 #
 #     DEMO="kafka"                  # examples/<DEMO>/{producer,consumer}_demo.py
 #                                   # and the <DEMO>-{producer,consumer} pidfiles
+#     CONSUMER_SCRIPT="celery/worker_demo.py"   # optional; the consuming side
+#                                   # when it is not <DEMO>/consumer_demo.py
 #     DEMO_NAME="kafka-python demo" # optional; defaults to "<DEMO> demo"
 #     BROKER="kafka"                # kafka | rabbit — container + env wiring
 #     PRODUCER_PORT=5005
@@ -268,7 +270,7 @@ _broker_demo_up() {
 
     log "starting $DEMO consumer (subscribed to $CHANNEL)"
     # shellcheck disable=SC2086
-    start_demo "$DEMO-consumer" "$DEMO/consumer_demo.py" $broker_env
+    start_demo "$DEMO-consumer" "${CONSUMER_SCRIPT:-$DEMO/consumer_demo.py}" $broker_env
 
     log "starting $DEMO producer on :$PRODUCER_PORT"
     # shellcheck disable=SC2086
