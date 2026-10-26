@@ -14,10 +14,12 @@
 # limitations under the License.
 
 import _fakes
+import pytest
 from pinpoint.agent import Agent
 from pinpoint.config import Config
 from pinpoint.propagator import (
     HEADER_PARENT_APP_NAME,
+    HEADER_PARENT_APP_NAMESPACE,
     HEADER_PARENT_APP_TYPE,
     HEADER_PARENT_SERVICE_NAME,
 )
@@ -196,9 +198,36 @@ def test_agent_uses_native_span_snapshot_for_propagation_and_event_limits():
     assert headers[HEADER_PARENT_APP_NAME] == "resolved-app"
     assert headers[HEADER_PARENT_APP_TYPE] == "7777"
     assert headers[HEADER_PARENT_SERVICE_NAME] == "resolved-service"
+    # A snapshot shorter than the namespace index reads as unset.
+    assert HEADER_PARENT_APP_NAMESPACE not in headers
     assert first._sequence == 0
     assert second._sequence == 1
     assert overflow._sequence is None
+
+
+@pytest.mark.parametrize("namespace", ["ns-a", ""])
+def test_agent_injects_cluster_namespace_from_snapshot_only_when_set(namespace):
+    native = _FakeNativeSpan(sampled=True)
+    snapshot = (
+        "resolved-app", 7777, "resolved-service", 3, 9,
+        (), (), (), (), (), (),
+        1,
+        False, (), False, False, False, (), "",
+        namespace,
+    )
+    agent = Agent(_FakeNativeAgent(native, snapshot),
+                  Config(application_name="app", cluster_namespace="stale-ns"))
+
+    span = agent.new_span("GET /", "/")
+    span.new_span_event("outbound")
+    headers = dict(span.inject_context_items())
+
+    # The resolved snapshot wins over the Python Config, and an empty namespace
+    # is never sent: a receiver with one reads it as a mismatch.
+    if namespace:
+        assert headers[HEADER_PARENT_APP_NAMESPACE] == namespace
+    else:
+        assert HEADER_PARENT_APP_NAMESPACE not in headers
 
 
 def test_agent_refreshes_config_snapshot_when_span_reports_new_revision():

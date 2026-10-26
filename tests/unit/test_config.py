@@ -36,6 +36,8 @@ def test_defaults():
     assert cfg.asyncio_task_span_timeout_ms == 5 * 60 * 1000
     assert cfg.sql_enable_raw_sql_cache is True
     assert cfg.sql_trace_bind_values is False
+    assert cfg.cluster_namespace == ""
+    assert cfg.grpc_compression == "gzip"
 
 
 def test_to_yaml_contains_required_keys():
@@ -252,6 +254,7 @@ def test_to_yaml_emits_identity_and_nested_block_values():
         uid_version="v4",
         service_name="checkout",
         api_key="secret",
+        cluster_namespace="com.pinpoint",
         grpc_ssl_trust_cert_file_path="/certs/trust.pem",
         grpc_ssl_root_cert_file_path="/certs/root.pem",
         grpc_ssl_enable=True,
@@ -263,6 +266,7 @@ def test_to_yaml_emits_identity_and_nested_block_values():
         grpc_sender_queue_size=1100,
         grpc_channel_max_age_ms=600000,
         grpc_stream_max_age_ms=300000,
+        grpc_compression="none",
         span_batch_size=64,
         span_batch_flush_interval_ms=250,
         span_batch_collect_deadline_ms=125,
@@ -276,6 +280,7 @@ def test_to_yaml_emits_identity_and_nested_block_values():
     assert 'UidVersion: "v4"' in y
     assert 'ServiceName: "checkout"' in y
     assert 'ApiKey: "secret"' in y
+    assert 'ClusterNamespace: "com.pinpoint"' in y
     assert "  Grpc:\n    SslEnable: true" in y
     assert '    TrustCertFilePath: "/certs/trust.pem"' in y
     assert '    RootCertFilePath: "/certs/root.pem"' in y
@@ -287,6 +292,7 @@ def test_to_yaml_emits_identity_and_nested_block_values():
     assert "    SenderQueueSize: 1100" in y
     assert "    ChannelMaxAgeMs: 600000" in y
     assert "    StreamMaxAgeMs: 300000" in y
+    assert '    Compression: "none"' in y
     assert "  SpanBatch:\n    Size: 64" in y
     assert "    FlushIntervalMs: 250" in y
     assert "    CollectDeadlineMs: 125" in y
@@ -307,6 +313,7 @@ def test_to_yaml_emits_every_native_section():
         "UidVersion:",
         "ServiceName:",
         "ApiKey:",
+        "ClusterNamespace:",
         "IsContainer:",
         "EnableCallstackTrace:",
         "Enable:",
@@ -330,6 +337,7 @@ def test_to_yaml_emits_every_native_section():
         "    ChannelMaxAgeMs:",
         "    StreamMaxAgeMs:",
         "    IdleTimeoutMs:",
+        "    Compression:",
         "  AgentInfo:",
         "    RefreshIntervalMs:",
         "    SendRetryIntervalMs:",

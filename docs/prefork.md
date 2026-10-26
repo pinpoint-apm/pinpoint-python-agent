@@ -125,7 +125,8 @@ Each worker appears as one agent instance in the Pinpoint UI. The agent id is
 always auto-generated (a fresh UUIDv7 per worker process), so sibling workers
 can never collide — but the id changes on worker restart. `agent_name` is the
 human-readable display label and need not be unique; all workers can share
-one.
+one. Left unset, it defaults to `<hostname>-<pid>`, so each worker gets its
+own label.
 
 ## Logging
 

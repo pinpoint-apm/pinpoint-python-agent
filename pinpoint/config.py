@@ -63,6 +63,9 @@ class Config:
     uid_version: str = "v4"                 # PINPOINT_PY_UID_VERSION (v4 like the Java/cpp agents; needs service_name)
     service_name: str = ""                  # PINPOINT_PY_SERVICE_NAME (required for v4)
     api_key: str = ""                       # PINPOINT_PY_API_KEY (optional, v4 only)
+    # The Java agent's profiler.cluster.namespace: sent as Pinpoint-pAppNamespace,
+    # and an inbound request carrying a different one starts a new trace.
+    cluster_namespace: str = ""             # PINPOINT_PY_CLUSTER_NAMESPACE (empty = unset)
     # Not a YAML key (and no env var): passed through native AgentOptions.
     # Default 1700.
     application_type: int = APP_TYPE_PYTHON
@@ -112,6 +115,9 @@ class Config:
     # gRPC client idle timeout. 0 disables, so a quiet channel keeps its
     # connection; a positive value below gRPC's 1s minimum is raised to 1000.
     grpc_idle_timeout_ms: int = 0            # PINPOINT_PY_GRPC_IDLE_TIMEOUT_MS
+    # gzip | none for span batches and the stats stream; native falls back to
+    # gzip on an unknown value, and to none if the collector refuses gzip.
+    grpc_compression: str = "gzip"           # PINPOINT_PY_GRPC_COMPRESSION
 
     # ---- stat --------------------------------------------------------------
     stat_enabled: bool = True               # PINPOINT_PY_STAT_ENABLE
@@ -279,6 +285,7 @@ class Config:
             "UidVersion": str(self.uid_version),
             "ServiceName": str(self.service_name),
             "ApiKey": str(self.api_key),
+            "ClusterNamespace": str(self.cluster_namespace),
             "Enable": bool(self.enabled),
             "IsContainer": bool(self.is_container),
             "EnableCallstackTrace": bool(self.enable_callstack_trace),
@@ -310,6 +317,7 @@ class Config:
                     "ChannelMaxAgeMs": int(self.grpc_channel_max_age_ms),
                     "StreamMaxAgeMs": int(self.grpc_stream_max_age_ms),
                     "IdleTimeoutMs": int(self.grpc_idle_timeout_ms),
+                    "Compression": str(self.grpc_compression),
                 },
                 "AgentInfo": {
                     "RefreshIntervalMs": int(self.agent_info_refresh_interval_ms),

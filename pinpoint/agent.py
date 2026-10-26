@@ -40,6 +40,7 @@ from .propagator import (
     HEADER_SPAN_ID,
     HEADER_TRACE_ID,
     HEADER_PARENT_APP_NAME,
+    HEADER_PARENT_APP_NAMESPACE,
     HEADER_PARENT_APP_TYPE,
     HEADER_PARENT_SERVICE_NAME,
     HEADER_SAMPLED,
@@ -305,11 +306,16 @@ class Agent:
             if not snapshot[11]:
                 return None
             service_name = str(snapshot[2])
+            cluster_namespace = _snapshot_cluster_namespace(snapshot)
             inject_base = (
                 (HEADER_PARENT_APP_NAME, str(snapshot[0])),
                 (HEADER_PARENT_APP_TYPE, str(int(snapshot[1]))),
                 *(((HEADER_PARENT_SERVICE_NAME, service_name),)
                   if service_name else ()),
+                # Never sent empty: a receiver with a namespace reads an empty
+                # one as a mismatch and restarts the trace.
+                *(((HEADER_PARENT_APP_NAMESPACE, cluster_namespace),)
+                  if cluster_namespace else ()),
             )
             _warn_on_implicit_bind_value_capture(snapshot, self._config)
             return (int(snapshot[11]), snapshot, inject_base,
@@ -619,6 +625,19 @@ def _snapshot_callstack_enabled(snapshot) -> bool:
         return bool(snapshot[_SNAPSHOT_ENABLE_CALLSTACK_TRACE])
     except (IndexError, TypeError):
         return False
+
+
+# Append-only native snapshot index of the resolved ClusterNamespace, which the
+# native side checks inbound; Span.inject_context_items sends it outbound.
+_SNAPSHOT_CLUSTER_NAMESPACE = 19
+
+
+def _snapshot_cluster_namespace(snapshot) -> str:
+    """Read the append-only namespace; a shorter tuple reads as unset."""
+    try:
+        return str(snapshot[_SNAPSHOT_CLUSTER_NAMESPACE] or "")
+    except (IndexError, TypeError):
+        return ""
 
 
 def _warn_on_implicit_bind_value_capture(snapshot, cfg: Config) -> None:

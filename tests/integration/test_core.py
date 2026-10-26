@@ -1647,6 +1647,41 @@ def test_main_continuation_flags_and_acceptor(core_agent, collector, trace_heade
     assert pb.flag == int(flags)
 
 
+@pytest.mark.parametrize("inbound_namespace,continued", [
+    (None, True),     # older peer: no header, the trace continues
+    ("ns-a", True),
+    ("ns-b", False),  # another cluster's trace
+    ("", False),      # present but empty is a mismatch too
+])
+def test_main_cluster_namespace_gates_inbound_and_is_injected(
+        core_agent, collector, inbound_namespace, continued):
+    agent, _ = core_agent(cluster_namespace="ns-a")
+    headers = {"Pinpoint-TraceID": "upstream^100^7", "Pinpoint-SpanID": "42",
+               "Pinpoint-pSpanID": "41"}
+    if inbound_namespace is not None:
+        headers["Pinpoint-pAppNamespace"] = inbound_namespace
+    rpc = f"/main/namespace/{inbound_namespace}"
+    with agent.new_span("incoming", rpc, headers=headers) as span:
+        assert (span.trace_id == "upstream^100^7") is continued
+        assert span._parent_span_id == (41 if continued else -1)
+        with span.new_span_event("outgoing"):
+            outgoing = dict(span.inject_context_items())
+            assert outgoing["Pinpoint-pAppNamespace"] == "ns-a"
+    collector.wait_span(rpc)
+
+
+def test_main_cluster_namespace_env_reaches_outbound_headers(core_agent, collector):
+    # Set only through the env the native agent reads: the outbound header
+    # must come from the resolved snapshot, not the Python Config.
+    agent, _ = core_agent(env={"PINPOINT_PY_CLUSTER_NAMESPACE": "env-ns"})
+    assert agent.config.cluster_namespace == ""
+    with agent.new_span("incoming", "/main/namespace-env") as span:
+        with span.new_span_event("outgoing"):
+            outgoing = dict(span.inject_context_items())
+    assert outgoing["Pinpoint-pAppNamespace"] == "env-ns"
+    collector.wait_span("/main/namespace-env")
+
+
 def test_main_existing_extra_yaml_profile_selection(core_agent, collector):
     agent, _ = core_agent(
         sampling_counter_rate=0,

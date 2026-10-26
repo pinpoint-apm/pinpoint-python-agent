@@ -785,7 +785,8 @@ py::tuple to_python_config(const pp::SpanConfigSnapshot& config) {
         config.http_client_record_url_query,
         config.http_server_record_request_param,
         config.http_server_real_ip_header,
-        config.http_server_real_ip_empty_value);
+        config.http_server_real_ip_empty_value,
+        config.cluster_namespace);
 }
 
 } // namespace

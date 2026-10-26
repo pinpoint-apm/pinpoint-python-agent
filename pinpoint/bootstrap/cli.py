@@ -76,7 +76,7 @@ _FLAGS = {
         "service the application belongs to (required by the default v4 identity)"),
     "agent_name": (
         "PINPOINT_PY_AGENT_NAME", str,
-        "agent display label (defaults to a generated id)"),
+        "agent display label (defaults to <hostname>-<pid>)"),
     "collector": (
         "PINPOINT_PY_COLLECTOR_HOST", str,
         "collector host to report to"),

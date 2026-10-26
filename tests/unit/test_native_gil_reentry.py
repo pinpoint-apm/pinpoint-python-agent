@@ -63,8 +63,9 @@ def test_new_span_extracts_inbound_context(native_agent):
     assert span_id != 0
     # The creation call carries only the config revision; the resolved
     # snapshot is served by agent/span and keeps revision at index 11, SQL at
-    # 12, user proxy names at 13, callstack capture at 14, and the four HTTP
-    # settings the Python layer records itself at 15-18.
+    # 12, user proxy names at 13, callstack capture at 14, the four HTTP
+    # settings the Python layer records itself at 15-18, and the cluster
+    # namespace it injects outbound at 19.
     assert revision == 1
     assert native_agent.get_config_snapshot() == (
         "unit-native-gil", 1700, "unit-test-service", 7, 11,
@@ -81,6 +82,7 @@ def test_new_span_extracts_inbound_context(native_agent):
         True,  # Http.Server.RecordRequestParam
         ["CF-Connecting-IP"],  # Http.Server.RealIpHeader
         "unknown",  # Http.Server.RealIpEmptyValue
+        "",  # ClusterNamespace (unset)
     )
     assert span.get_config_snapshot() == native_agent.get_config_snapshot()
     span.end_span()

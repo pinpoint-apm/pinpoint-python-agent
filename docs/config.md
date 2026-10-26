@@ -113,10 +113,11 @@ pinpoint.init(application_name="MyApp", service_name="MyService", extra_yaml="Fu
 | `init()` kwarg | Environment Variable | Type | Default | Notes |
 |---|---|---|---|---|
 | `application_name` | `PINPOINT_PY_APPLICATION_NAME` | str | `""` | **Required.** When neither this nor `config_file_path` is set, `init()` logs a warning and disables the agent. Max 24 chars for `uid_version` v1, otherwise 254. See [Name rules](#name-rules). |
-| `agent_name` | `PINPOINT_PY_AGENT_NAME` | str | `""` | Optional human-readable label; defaults to the agent id. Max 255 chars (254 for v4). The agent id is not configurable — always an auto-generated per-process UUIDv7. See [Name rules](#name-rules). |
+| `agent_name` | `PINPOINT_PY_AGENT_NAME` | str | `""` | Optional human-readable label; defaults to `<hostname>-<pid>` (hostname characters outside the [name rules](#name-rules) become `_`). Max 255 chars (254 for v4). The agent id is not configurable — always an auto-generated per-process UUIDv7. See [Name rules](#name-rules). |
 | `uid_version` | `PINPOINT_PY_UID_VERSION` | str | `"v4"` | Agent identity version. `v4` (the default, as in the Java and C++ agents) requires `service_name`; `v3` needs only `application_name`; `v1` is the legacy format and caps `application_name` at 24 characters. `api_key` is optional on v4. |
 | `service_name` | `PINPOINT_PY_SERVICE_NAME` | str | `""` | **Required for v4 (the default).** 3–254 chars. Unused on v1 and v3. See [Name rules](#name-rules). Also available as `pinpoint-run --service-name`. |
 | `api_key` | `PINPOINT_PY_API_KEY` | str | `""` | Optional, v4 only — the same as the Java agent's `-Dpinpoint.apikey`. Sent as the `apikey` gRPC header when set and omitted when empty. Unused otherwise. |
+| `cluster_namespace` | `PINPOINT_PY_CLUSTER_NAMESPACE` | str | `""` | Keeps this agent's traces apart from another Pinpoint cluster's, as the Java agent's `profiler.cluster.namespace` does. When set, outbound calls send it as `Pinpoint-pAppNamespace`, and an inbound request whose `Pinpoint-pAppNamespace` is a different value (an empty one included) starts a new trace instead of continuing the caller's; a request without the header still continues. Empty: no header is sent and none is checked. Compared exactly, not trimmed. Not reloadable. |
 | `enabled` | `PINPOINT_PY_ENABLE` | bool | `True` | `False` disables tracing without code changes: the native side gets `Enable: false` **and** the Python instrumentations short-circuit. |
 | `is_container` | `PINPOINT_PY_IS_CONTAINER` | bool | `False` | The rendered YAML always writes this key, so set it explicitly in containers. (Auto-detection applies only when a config file omits the key.) |
 | `application_type` | — | int | `1700` | Pinpoint service type (`APP_TYPE_PYTHON`). Passed via native `AgentOptions`, not YAML; no env var. |
@@ -132,8 +133,9 @@ every gRPC request:
 - **Allowed characters:** ASCII letters (`a-z`, `A-Z`), digits (`0-9`), `.`,
   `-`, and `_`. Nothing else — no spaces, no `/`, no non-ASCII (e.g. Korean)
   characters.
-- **Empty strings are invalid.** An empty `agent_name` falls back to the agent
-  id; an empty `application_name` (or `service_name` on v4) fails validation.
+- **Empty strings are invalid.** An empty `agent_name` falls back to
+  `<hostname>-<pid>`; an empty `application_name` (or `service_name` on v4)
+  fails validation.
 
 | Name | v1 | v3 | v4 (default) |
 |---|---|---|---|
@@ -234,6 +236,7 @@ starts and that lifecycle falls back to the native stdout/file sink.
 | `grpc_channel_max_age_ms` | `PINPOINT_PY_GRPC_CHANNEL_MAX_AGE_MS` | int | `0` | Replaces a channel older than this (±10% jitter) with a freshly connected one. `0` disables. |
 | `grpc_stream_max_age_ms` | `PINPOINT_PY_GRPC_STREAM_MAX_AGE_MS` | int | `0` | Max lifetime (±10% jitter) of the ping, stat and command streams. `0` disables. |
 | `grpc_idle_timeout_ms` | `PINPOINT_PY_GRPC_IDLE_TIMEOUT_MS` | int | `0` | Time without an RPC after which gRPC drops a channel to IDLE. `0` disables; a positive value below gRPC's 1s minimum is raised to `1000`. |
+| `grpc_compression` | `PINPOINT_PY_GRPC_COMPRESSION` | str | `"gzip"` | `gzip` or `none` (case-insensitive; anything else falls back to `gzip` with a warning). Compresses span batches and the stats stream, as the Java agent does; agent, metadata and command RPCs are never compressed. If the collector answers gzip with `UNIMPLEMENTED`, the agent warns once and sends that data uncompressed from then on, losing only what was already sent compressed. |
 
 ---
 
