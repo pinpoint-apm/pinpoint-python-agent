@@ -165,6 +165,17 @@ name at startup like any other validation failure.
 | `native_log_to_python` | `PINPOINT_PY_NATIVE_LOG_TO_PYTHON` | bool | `False` | **Python-only opt-in.** Route native-agent diagnostics to `logging.getLogger("pinpoint.native")` through a bounded asynchronous bridge. Also available as `pinpoint-run --native-log-to-python`. |
 | `native_log_queue_size` | `PINPOINT_PY_NATIVE_LOG_QUEUE_SIZE` | int | `1024` | Python-only bridge record capacity, 2–4096. Invalid/out-of-range values fall back to 1024. The queue also has a 4 MiB byte budget and truncates each message at a valid UTF-8 boundary no later than 4 KiB. |
 
+On stdout, each native message is written with one `write()` as soon as it is
+logged, also when stdout is a pipe, as it is under docker and kubernetes.
+The Python `pinpoint.*` handlers flush each record the same way. Workers that
+share one stdout therefore never cut each other's lines: a pipe write of at
+most `PIPE_BUF` (4096 bytes on Linux) is atomic, and the longest native
+message, the `config:` dump at `INFO`, is about 2 KB. The agent turns on
+per-operation flushing of the process's `std::cout` for this, so other C++
+extensions that write to `std::cout` are flushed per operation as well. Your
+application's own `print()` output is still block-buffered on a pipe. Set
+`PYTHONUNBUFFERED=1` to keep it in order with the agent's lines.
+
 The bridge is off by default, preserving the native logger's existing stdout
 or `Log.FilePath` behavior. When enabled, the native sink contract is replacement,
 not teeing: **neither stdout nor `Log.FilePath` receives native lines**, even if

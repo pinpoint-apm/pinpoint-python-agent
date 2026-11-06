@@ -40,12 +40,14 @@ overrides, and fork re-init (prefork-server model).
 | `test_http_clients.py`  | http-echo                 | requests, urllib3, httpx, aiohttp client (+ dedupe, wire headers) |
 | `test_grpc.py`          | *(none — in-process server)* | grpc client + server interceptors (all four RPC shapes, stream errors, abort, propagation) |
 | `test_gunicorn_workers.py` | *(none — mock collector)* | gunicorn sync/gthread/gevent/eventlet workers: concurrent requests answered, outbound headers per transaction, spans delivered |
+| `test_native_stdout_log.py` | *(none — mock collector)* | native stdout log through a pipe: each line readable as soon as it is logged, no mixing across processes or with the Python logger |
 
 ## Prerequisites
 
 - A running Docker daemon (no daemon → the container-backed modules skip;
-  `test_core.py`, `test_web_frameworks.py`, `test_grpc.py` and
-  `test_gunicorn_workers.py` are marked `no_docker` and still run).
+  `test_core.py`, `test_web_frameworks.py`, `test_grpc.py`,
+  `test_gunicorn_workers.py` and `test_native_stdout_log.py` are marked
+  `no_docker` and still run).
 - The dev shell so `_native` is importable (drop the preset to keep the wiring
   you already have):
   ```bash

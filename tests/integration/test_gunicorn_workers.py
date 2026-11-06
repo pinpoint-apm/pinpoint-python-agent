@@ -73,6 +73,8 @@ _DOWNSTREAM_DELAY_SECONDS = 0.2
 # delay), short enough that a wedged worker fails the case quickly.
 _REQUEST_TIMEOUT_SECONDS = 5.0
 _BOOT_TIMEOUT_SECONDS = 30.0
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))))
 
 _APP_TEMPLATE = textwrap.dedent('''\
     import pinpoint
@@ -214,6 +216,10 @@ def test_worker_answers_requests_and_sends_spans(
     # reads them over the YAML, so none may leak into the workers.
     env = {k: v for k, v in os.environ.items()
            if not k.startswith("PINPOINT_PY_")}
+    # --chdir puts tmp_path first on the workers' path, so the checkout's
+    # pinpoint/ must be put there too.
+    env["PYTHONPATH"] = os.pathsep.join(
+        p for p in (_REPO_ROOT, env.get("PYTHONPATH")) if p)
     proc = subprocess.Popen(
         [sys.executable, "-m", "gunicorn",
          "--chdir", str(tmp_path),
