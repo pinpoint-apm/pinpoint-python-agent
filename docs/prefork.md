@@ -95,6 +95,48 @@ safely instead of crashing:
   drain hook and atexit shutdown, so gunicorn's graceful worker stop flushes
   queued spans.
 
+#### Worker classes: sync, gthread, gevent, eventlet
+
+All four are supported, with the same setup: `init()` at app-import time
+without `--preload`, or `prefork=True` with `--preload`. There is no
+worker-specific option. `tests/integration/test_gunicorn_workers.py` runs each
+class against a mock collector, with concurrent requests that call a slow
+downstream through `requests`, and checks that every request is answered,
+every outbound call carries its own transaction's headers, and every span
+reaches the collector. It was last run with gunicorn 22.0.0, gevent 24.2.1
+(greenlet 3.0.3) and eventlet 0.41.3.
+
+Why the cooperative workers (gevent, eventlet) need nothing special:
+
+- **The native agent's threads never run Python.** Span sending, stats, ping
+  and command handling run on C++ threads that never take the GIL and never
+  call back into the interpreter, so monkey-patched `threading`, `socket` and
+  `time` do not reach them. They are real OS threads beside the event loop and
+  keep sending while greenlets wait on I/O.
+- **The calls into native return without waiting.** A span's native calls
+  queue work for those threads and return. None of them blocks on the network
+  or on the collector, so a greenlet never stalls the hub inside the agent.
+  An unreachable collector only means the queued spans are dropped.
+- **The active span is per greenlet.** The agent keeps the current span in a
+  `contextvars.ContextVar`, and greenlet (1.0 and later, which both gevent and
+  eventlet use) gives each greenlet its own context. Concurrent requests that
+  interleave on one OS thread therefore keep separate transactions.
+- **Patch before the agent is imported.** gunicorn's gevent and eventlet
+  workers patch the worker before they import the app, so `init()` at
+  app-import time already runs patched. If you run a gevent or eventlet
+  server yourself, call `gevent.monkey.patch_all()` (or
+  `eventlet.monkey_patch()`) first, as both libraries require, then import
+  `pinpoint`. With `--preload` the master imports the app before the worker
+  patches it. That is why `prefork=True` makes the master's `init()` store the
+  configuration only: each worker then starts its agent after the patching.
+- **`native_log_to_python=True` works there too.** Its consumer is a
+  `threading.Thread`, which becomes a greenlet once patched. It polls a queue
+  that native fills without taking the GIL.
+
+A request that hangs only with the agent enabled is a bug. Report it with the
+worker's Python stack (`py-spy dump --pid <worker pid>`) and native stack
+(`gdb -p <worker pid> -batch -ex "thread apply all bt"`).
+
 ### uWSGI
 
 uWSGI forks workers from C code that, by default, does not run Python's fork

@@ -37,3 +37,9 @@ flask
 fastapi
 tornado>=6
 falcon>=3
+
+# test_gunicorn_workers.py: one case per gunicorn worker class; a missing
+# gevent or eventlet skips only its case.
+gunicorn
+gevent
+eventlet

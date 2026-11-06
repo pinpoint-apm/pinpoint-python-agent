@@ -39,12 +39,13 @@ overrides, and fork re-init (prefork-server model).
 | `test_elasticsearch.py` | elasticsearch:8.15        | elasticsearch sync/async (+ urllib3/aiohttp suppression) |
 | `test_http_clients.py`  | http-echo                 | requests, urllib3, httpx, aiohttp client (+ dedupe, wire headers) |
 | `test_grpc.py`          | *(none — in-process server)* | grpc client + server interceptors (all four RPC shapes, stream errors, abort, propagation) |
+| `test_gunicorn_workers.py` | *(none — mock collector)* | gunicorn sync/gthread/gevent/eventlet workers: concurrent requests answered, outbound headers per transaction, spans delivered |
 
 ## Prerequisites
 
 - A running Docker daemon (no daemon → the container-backed modules skip;
-  `test_core.py`, `test_web_frameworks.py` and `test_grpc.py` are marked
-  `no_docker` and still run).
+  `test_core.py`, `test_web_frameworks.py`, `test_grpc.py` and
+  `test_gunicorn_workers.py` are marked `no_docker` and still run).
 - The dev shell so `_native` is importable (drop the preset to keep the wiring
   you already have):
   ```bash
