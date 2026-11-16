@@ -168,10 +168,9 @@ degrade to plain function calls when the agent is not initialized.
 
 The default log level is `warn`, so a healthy startup is silent. Set
 `log_level="info"` (or `PINPOINT_PY_LOG_LEVEL=INFO`) and look for the native
-agent's registration lines on stdout:
+agent's registration line on stdout:
 
 ```
-[info][pinpoint][grpc.cpp:...] success to register the agent
 [info][pinpoint][grpc.cpp:...] AgentInfo sent
 ```
 

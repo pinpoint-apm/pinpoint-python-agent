@@ -181,7 +181,7 @@ def test_native_line_is_readable_before_the_process_exits(collector, tmp_path):
         _read_until(read_fd, buf, [b"child-ready solo"], procs)
         text = buf.decode(errors="replace")
         assert "native-line-solo-0" in text, text
-        assert "success to register the agent" in text, text
+        assert "AgentInfo sent" in text, text
         # Nothing is held back mid-line either.
         assert text.endswith("\n"), text[-300:]
     finally:

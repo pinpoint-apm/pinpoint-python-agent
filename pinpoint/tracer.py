@@ -55,7 +55,13 @@ _EVENT_SORT_KEY = operator.itemgetter(0)
 # Cap on Python-side buffered annotations per span/event: the native
 # ``span_max_event_sequence`` bounds events, not these wrapper-side buffers, so a
 # long-lived span annotating per iteration would grow one without bound.
-_MAX_ANNOTATIONS = 5000
+#
+# Kept below native's own per-list cap (``PinpointAnnotation::kMaxAnnotations``,
+# 1024), which drops every append past it. The buffer is applied first, so with
+# room to spare the truncation marker below and the annotations native adds
+# after it (the span's HTTP status code from SetStatusCode) still reach the
+# wire. Each buffered entry becomes at most one native annotation.
+_MAX_ANNOTATIONS = 1000
 
 # Verdict-only errors buffered for overflow placeholders. Past the bound each
 # excess error crosses immediately, so memory stays bounded without letting a

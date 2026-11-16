@@ -64,8 +64,9 @@ pybind11_add_module(_native src/_native.cpp)
 target_link_libraries(_native PRIVATE pinpoint_cpp)
 
 # Copy libpinpoint_cpp next to _native after build: _native needs the SONAME
-# file it links against (libpinpoint_cpp.2.dylib / .so.2) plus the real file
-# that symlink points at.
+# file it links against plus the real file that name points at. Since
+# pinpoint-cpp-agent 2.3.0 the SONAME is the full ABI version
+# (libpinpoint_cpp.2.3.0.dylib / .so.2.3.0), so the two are the same file.
 #
 # This does NOT make the package self-contained. BUILD_SHARED_LIBS above also
 # makes gRPC, protobuf and abseil separate shared objects that _native links

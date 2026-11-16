@@ -42,11 +42,9 @@
 #include <atomic>
 #include <cstring>
 #include <cstdint>
-#include <iostream>
 #include <limits>
 #include <map>
 #include <memory>
-#include <mutex>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -791,30 +789,6 @@ py::tuple to_python_config(const pp::SpanConfigSnapshot& config) {
         config.cluster_namespace);
 }
 
-// With no Log.FilePath the native agent writes its log to std::cout, which
-// forwards each write to C stdio's stdout (sync_with_stdio). On a pipe -- what
-// docker and kubernetes give a container -- that is fully buffered, so the
-// lines waited for 4 KiB of others, went out in 4096-byte writes cut
-// mid-line, and lost their tail when a worker left through os._exit(). The
-// sibling workers sharing the pipe, and the Python logger flushing its own
-// records to the same fd, landed in the middle of those cuts.
-//
-// unitbuf flushes std::cout after each output operation. The logger hands a
-// whole message to one std::cout.write() under its mutex, and the interpreter
-// does not write through C stdio's stdout itself (sys.stdout is its own
-// buffer on fd 1), so each message leaves in one write() as soon as it is
-// logged. A pipe write of at most PIPE_BUF (4096) bytes is
-// atomic, so messages up to that size cannot be split by another process.
-//
-// std::cout is process-wide (libpinpoint_cpp and this module share the
-// system libstdc++), so this also flushes other C++ code's std::cout per
-// operation. Set once, before the first agent starts its threads, so it never
-// races a native thread's write.
-void flush_native_stdout_per_message() {
-    static std::once_flag once;
-    std::call_once(once, [] { std::cout.setf(std::ios::unitbuf); });
-}
-
 } // namespace
 
 PYBIND11_MODULE(_native, m) {
@@ -1095,7 +1069,6 @@ PYBIND11_MODULE(_native, m) {
                       queue->enqueue(level, message);
                   };
               }
-              flush_native_stdout_per_message();
               // The C++ API reports launch success separately from handle lookup.
               // start_agent() returns the usable handle and raises on a failed
               // launch, which agent.init() degrades to _NullAgent.

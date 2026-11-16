@@ -50,7 +50,12 @@ pytest.importorskip("grpc_tools")
 import pinpoint
 from pinpoint import agent as agent_mod
 from pinpoint import propagator
-from pinpoint.annotation import ANNOTATION_HTTP_REQUEST_HEADER, ANNOTATION_SQL_ID
+from pinpoint.annotation import (
+    ANNOTATION_API,
+    ANNOTATION_HTTP_REQUEST_HEADER,
+    ANNOTATION_HTTP_STATUS_CODE,
+    ANNOTATION_SQL_ID,
+)
 from pinpoint.http_helper import (trace_http_client_request,
                                   trace_http_server_request)
 from pinpoint.service_type import (
@@ -600,6 +605,43 @@ def test_span_event_annotations_and_api_metadata(core_agent, collector):
 
     meta = collector.wait_api_meta("core-child-op")
     assert ev_pb.apiId == meta.apiId
+
+
+def test_annotation_cap_keeps_marker_and_status_code_on_the_wire(
+        core_agent, collector):
+    """Native keeps at most 1024 annotations per span or event and drops every
+    later append. The Python cap sits below it, so the truncation marker, and
+    the status code native appends after the buffer, still reach the wire."""
+    from pinpoint.tracer import _MAX_ANNOTATIONS
+
+    agent, _ = core_agent()
+    with agent.new_span("core-ann-cap", "/core/annotation-cap") as span:
+        span.set_status_code(200)
+        for i in range(1100):
+            span.annotate_int(999, i)
+        with span.new_span_event("core-ann-cap-event") as ev:
+            for i in range(1100):
+                ev.annotate_int(998, i)
+
+    pb = collector.wait_span("/core/annotation-cap")
+
+    def marker(annotations):
+        return [a.value.stringValue for a in annotations
+                if a.key == ANNOTATION_API
+                and "truncated" in a.value.stringValue]
+
+    span_values = [a.value.intValue for a in pb.annotation if a.key == 999]
+    assert span_values == list(range(_MAX_ANNOTATIONS))
+    assert marker(pb.annotation) == [
+        f"pinpoint: annotations truncated at {_MAX_ANNOTATIONS}"]
+    status = [a.value.intValue for a in pb.annotation
+              if a.key == ANNOTATION_HTTP_STATUS_CODE]
+    assert status == [200]
+
+    (ev_pb,) = pb.spanEvent
+    event_values = [a.value.intValue for a in ev_pb.annotation if a.key == 998]
+    assert event_values == list(range(_MAX_ANNOTATIONS))
+    assert len(marker(ev_pb.annotation)) == 1
 
 
 def test_error_recording(core_agent, collector):
@@ -1318,7 +1360,7 @@ def test_startup_config_failure_is_delivered_to_python_logger(monkeypatch):
         )
         assert isinstance(agent, agent_mod._NullAgent)
         assert any("yaml parsing exception" in message for message in messages)
-        assert any("address of collector is required" in message
+        assert any("agent not started: Collector.Host is required" in message
                    for message in messages)
     finally:
         pinpoint.shutdown()

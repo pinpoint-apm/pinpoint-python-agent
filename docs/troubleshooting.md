@@ -34,9 +34,15 @@ level is `warn`, so a healthy startup is silent — set
 
 | In the native log (stdout) | Meaning |
 |---|---|
-| `success to register the agent` / `AgentInfo sent` | The agent registered with the collector. Startup succeeded. |
-| `agent start failed: ...` | Configuration or setup error; the line names the cause. |
-| `failed to send AgentInfo` | The collector is not reachable yet. Retried indefinitely. |
+| `AgentInfo sent` | The agent registered with the collector. Startup succeeded. Logged again on every AgentInfo refresh. |
+| `agent not started: ...` | The configuration cannot start the agent; the line names the key (`Collector.Host is required`, `ApplicationName is required`, `agent identity resolution failed (invalid ApplicationName or ServiceName)`). |
+| `agent start failed: ...` | Setup error; the line names the cause. |
+| `failed to register the agent: <code>, <message>` (WARN) | The collector is not reachable yet. Retried indefinitely; throttled to one line per minute, ending in `(N failed attempt(s) since the last report)`. |
+| `failed to register the agent: collector rejected it ...` (ERROR) | The collector answered but refused the agent, typically a v4 `service_name` not registered in Pinpoint Web. Retried indefinitely. |
+
+Native lines that repeat per request or per interval are throttled: the first
+one is logged at once, then at most one per minute per call site, ending in
+`[N occurrences since last report]`.
 
 At `INFO`, the native agent also dumps the configuration it **resolved**
 (the `config:` line) — after the kwargs-YAML, any config file, environment

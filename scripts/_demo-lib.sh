@@ -83,7 +83,7 @@ wait_log() {
 # the log lets us avoid sending requests during the dead window.
 wait_agent_ready() {
     local log=$1 name=$2 deadline=$((SECONDS + 30))
-    until grep -q "success to register the agent" "$log" 2>/dev/null; do
+    until grep -q "AgentInfo sent" "$log" 2>/dev/null; do
         (( SECONDS > deadline )) && { warn "$name agent did not register within 30s — continuing anyway"; return 0; }
         sleep 1
     done

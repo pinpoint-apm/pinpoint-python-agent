@@ -144,13 +144,25 @@ every gRPC request:
 | `service_name` | unused | unused | required, 3–254 |
 
 A name that fails validation disables the agent: the native side logs
-`failed to resolve agent identity` and `init()` returns a no-op agent. The
+`invalid ApplicationName "<value>": <reason>` (or `invalid ServiceName
+"<value>" (required for uid.version=v4): <reason>`), then
+`failed to resolve agent identity`, and `init()` returns a no-op agent. The
 Python layer passes the values through unchanged, so the error surfaces in the
 native log, not as a Python exception.
 
 The 3-character minimum for `service_name` matches the Java agent and the
 Pinpoint Collector's service registry; the native agent rejects a shorter
 name at startup like any other validation failure.
+
+**Collector compatibility (v4).** The v4 identity needs a Pinpoint 4.0.0+
+Collector; against an older one, set `uid_version="v3"`. With the
+Collector's service lookup on (the 4.0.0 default), `service_name` must already
+be registered as a service in Pinpoint Web. For an unregistered name the
+Collector rejects the AgentInfo, and the agent keeps retrying with a
+`failed to register the agent: collector rejected it` error while the
+Collector drops its spans and stats. With service lookup off
+(`pinpoint.collector.service.lookup.enabled=false`), the Collector puts all
+data in the `DEFAULT` service; set `service_name="DEFAULT"` to match.
 
 ---
 
@@ -170,9 +182,9 @@ logged, also when stdout is a pipe, as it is under docker and kubernetes.
 The Python `pinpoint.*` handlers flush each record the same way. Workers that
 share one stdout therefore never cut each other's lines: a pipe write of at
 most `PIPE_BUF` (4096 bytes on Linux) is atomic, and the longest native
-message, the `config:` dump at `INFO`, is about 2 KB. The agent turns on
-per-operation flushing of the process's `std::cout` for this, so other C++
-extensions that write to `std::cout` are flushed per operation as well. Your
+message, the `config:` dump at `INFO`, is about 2 KB. The native logger
+flushes `std::cout` after each of its own lines; other C++ extensions that
+write to `std::cout` keep their usual buffering. Your
 application's own `print()` output is still block-buffered on a pipe. Set
 `PYTHONUNBUFFERED=1` to keep it in order with the agent's lines.
 
@@ -241,13 +253,13 @@ starts and that lifecycle falls back to the native stdout/file sink.
 | `grpc_keepalive_time_ms` | `PINPOINT_PY_GRPC_KEEPALIVE_TIME_MS` | int | `30000` | `GRPC_ARG_KEEPALIVE_TIME_MS`. |
 | `grpc_keepalive_timeout_ms` | `PINPOINT_PY_GRPC_KEEPALIVE_TIMEOUT_MS` | int | `60000` | `GRPC_ARG_KEEPALIVE_TIMEOUT_MS`. |
 | `grpc_keepalive_permit_without_calls` | `PINPOINT_PY_GRPC_KEEPALIVE_PERMIT_WITHOUT_CALLS` | bool | `False` | `GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS`: keep pinging a channel that has no active RPC. Off by default — a collector or proxy may close a channel that pings while idle. |
-| `grpc_max_send_message_size` | `PINPOINT_PY_GRPC_MAX_SEND_MESSAGE_SIZE` | int | `4194304` | `-1` = unlimited. |
+| `grpc_max_send_message_size` | `PINPOINT_PY_GRPC_MAX_SEND_MESSAGE_SIZE` | int | `4194304` | `-1` = unlimited. Keep it at or below the collector's inbound limit. A span batch or URL-stat send over this size goes out as several requests within it; only a single span chunk or URL-stat entry too large for any request is dropped, with a throttled warning naming it. With `-1` nothing is measured. |
 | `grpc_max_receive_message_size` | `PINPOINT_PY_GRPC_MAX_RECEIVE_MESSAGE_SIZE` | int | `4194304` | `-1` = unlimited. |
 | `grpc_sender_queue_size` | `PINPOINT_PY_GRPC_SENDER_QUEUE_SIZE` | int | `1000` | Metadata sender queue; spans use `span_queue_size`. |
 | `grpc_channel_max_age_ms` | `PINPOINT_PY_GRPC_CHANNEL_MAX_AGE_MS` | int | `0` | Replaces a channel older than this (±10% jitter) with a freshly connected one. `0` disables. |
 | `grpc_stream_max_age_ms` | `PINPOINT_PY_GRPC_STREAM_MAX_AGE_MS` | int | `0` | Max lifetime (±10% jitter) of the ping, stat and command streams. `0` disables. |
 | `grpc_idle_timeout_ms` | `PINPOINT_PY_GRPC_IDLE_TIMEOUT_MS` | int | `0` | Time without an RPC after which gRPC drops a channel to IDLE. `0` disables; a positive value below gRPC's 1s minimum is raised to `1000`. |
-| `grpc_compression` | `PINPOINT_PY_GRPC_COMPRESSION` | str | `"gzip"` | `gzip` or `none` (case-insensitive; anything else falls back to `gzip` with a warning). Compresses span batches and the stats stream, as the Java agent does; agent, metadata and command RPCs are never compressed. If the collector answers gzip with `UNIMPLEMENTED`, the agent warns once and sends that data uncompressed from then on, losing only what was already sent compressed. |
+| `grpc_compression` | `PINPOINT_PY_GRPC_COMPRESSION` | str | `"gzip"` | `gzip` or `none` (case-insensitive, surrounding whitespace ignored; a blank value means `gzip`, and anything else falls back to `gzip` with a warning). Compresses span batches and the stats stream, as the Java agent does; agent, metadata and command RPCs are never compressed. If the collector answers gzip with `UNIMPLEMENTED`, the agent warns once and sends that data uncompressed from then on, losing only what was already sent compressed. |
 
 ---
 
@@ -265,7 +277,7 @@ starts and that lifecycle falls back to the native stdout/file sink.
 
 | `init()` kwarg | Environment Variable | Type | Default | Notes |
 |---|---|---|---|---|
-| `sampling_type` | `PINPOINT_PY_SAMPLING_TYPE` | str | `"COUNTER"` | `"COUNTER"` or `"PERCENT"`. |
+| `sampling_type` | `PINPOINT_PY_SAMPLING_TYPE` | str | `"COUNTER"` | `"COUNTER"` or `"PERCENT"` (case-insensitive, surrounding whitespace ignored). An unrecognized value falls back to `"COUNTER"` with a warning. |
 | `sampling_counter_rate` | `PINPOINT_PY_SAMPLING_COUNTER_RATE` | int | `1` | Sample 1/N transactions. `0` = disable. |
 | `sampling_percent_rate` | `PINPOINT_PY_SAMPLING_PERCENT_RATE` | float | `100.0` | `0` or negative = never sample; values above `100` become `100`. The rate is stored as hundredths of a percent and **truncates** (`0.29` samples 0.28%), so a positive rate below `0.01` truncates to `0` and samples nothing either — the agent logs a `WARNING` for it. `0.01` is the smallest rate that still samples. |
 | `sampling_new_throughput` | `PINPOINT_PY_SAMPLING_NEW_THROUGHPUT` | int | `0` | TPS cap for new transactions. `0` = unlimited. |
@@ -299,7 +311,7 @@ still propagate `Pinpoint-Sampled: s0` downstream — see
 | `init()` kwarg | Environment Variable | Type | Default | Notes |
 |---|---|---|---|---|
 | `http_collect_url_stat` | `PINPOINT_PY_HTTP_COLLECT_URL_STAT` | bool | `False` | Aggregate response-time histograms per `(url, method, status)`, bucketed into 30-second ticks and reported on the stat stream. The bundled HTTP integrations pass the route template (Flask's `rule`, and the equivalent for the others), so keys stay bounded; a span whose URL is empty is aggregated under `/NULL`. |
-| `http_url_stat_limit` | `PINPOINT_PY_HTTP_URL_STAT_LIMIT` | int | `1000` | Max distinct URL keys tracked per 30-second tick. `0` records none; negative values fall back to the default. |
+| `http_url_stat_limit` | `PINPOINT_PY_HTTP_URL_STAT_LIMIT` | int | `1000` | Max distinct URL keys tracked per 30-second tick. `0` records none; a value outside `0`–`10000` falls back to the default. A URL pattern longer than 1024 bytes is kept abbreviated (its first 1024 bytes plus `...(<length>)`). |
 | `http_url_stat_queue_size` | `PINPOINT_PY_HTTP_URL_STAT_QUEUE_SIZE` | int | `1024` | Records buffered per queue shard (16 shards) while waiting for aggregation; anything beyond is dropped. Valid range `1`–`65536`, otherwise the default. |
 | `http_url_stat_enable_trim_path` | `PINPOINT_PY_HTTP_URL_STAT_ENABLE_TRIM_PATH` | bool | `False` | Trim the recorded URL to `http_url_stat_trim_path_depth` leading segments plus `*`. See the note below. |
 | `http_url_stat_trim_path_depth` | `PINPOINT_PY_HTTP_URL_STAT_TRIM_PATH_DEPTH` | int | `3` | Leading path segments kept when trimming is on. See the note below. |
@@ -437,7 +449,7 @@ literal or comment normalize to the same ID as the equivalent short query.
 
 | `init()` kwarg | Environment Variable | Type | Default | Notes |
 |---|---|---|---|---|
-| `sql_max_bind_args_size` | `PINPOINT_PY_SQL_MAX_BIND_ARGS_SIZE` | int | `1024` | Max bytes of recorded bind arguments. |
+| `sql_max_bind_args_size` | `PINPOINT_PY_SQL_MAX_BIND_ARGS_SIZE` | int | `1024` | Max bytes of recorded bind arguments. It bounds bind values only. The literals SQL normalization extracts are never cut; a parameter list over 64 KiB is dropped whole, and the statement is shown with its placeholders unfilled while keeping its SQL id and its bind values. |
 | `sql_enable_sql_stats` | `PINPOINT_PY_SQL_ENABLE_SQL_STATS` | bool | `False` | Record SQL metadata keyed by UID (`SQL-UID` annotation) instead of ID (`SQL-ID`), for collectors that aggregate SQL statistics by uid. Applies to sampled spans only. |
 | `sql_enable_raw_sql_cache` | `PINPOINT_PY_SQL_ENABLE_RAW_SQL_CACHE` | bool | `True` | Cache normalized SQL by raw text. |
 | `sql_remove_comments` | `PINPOINT_PY_SQL_REMOVE_COMMENTS` | bool | `True` | Strip comments before normalization; fixed at startup. |

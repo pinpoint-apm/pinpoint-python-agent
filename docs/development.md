@@ -46,9 +46,15 @@ Build output:
 
 ```
 build/debug/_native.cpython-3XX-<platform>.so
-build/debug/libpinpoint_cpp.{2.0.0,2,}.dylib   # macOS
-build/debug/libpinpoint_cpp.so.{2.0.0,2,}      # Linux
+build/debug/libpinpoint_cpp.2.3.0.dylib        # macOS
+build/debug/libpinpoint_cpp.so.2.3.0           # Linux
 ```
+
+Since pinpoint-cpp-agent 2.3.0 the library's SONAME is its full ABI version
+(`libpinpoint_cpp.so.2.3.0`, macOS `libpinpoint_cpp.2.3.0.dylib`), the same
+name as the real file, so the build makes no `.so.2` link any more. A build tree that still holds an older
+`libpinpoint_cpp.so.2*` from before the bump keeps it beside the new one;
+`scripts/dev.sh` wires the newest.
 
 The transitive dylibs (`libgrpc++`, `libabsl_*`, `libprotobufd`, `libyaml-cppd`,
 `libfmtd`, …) stay scattered under `FETCHCONTENT_BASE_DIR`, *not* next to
@@ -85,7 +91,7 @@ vcpkg's default triplets link statically (`x64-linux` sets
 `VCPKG_LIBRARY_LINKAGE static`), and that changes the dev workflow: gRPC,
 protobuf, abseil, OpenSSL, yaml-cpp and fmt land **inside**
 `libpinpoint_cpp.so` instead of beside it. `ldd` on the extension shows only
-`libpinpoint_cpp.so.2` plus libc/libstdc++/libgcc/libm — none of the
+`libpinpoint_cpp.so.2.3.0` plus libc/libstdc++/libgcc/libm — none of the
 `@rpath`/`$ORIGIN` entries §5 exists to resolve — so a vcpkg build needs no
 `LD_LIBRARY_PATH`/`DYLD_LIBRARY_PATH` for the transitive libraries. §4 still
 applies: `_native` reaches its sibling `libpinpoint_cpp` through those
@@ -131,9 +137,10 @@ scripts/dev.sh debug          # or: scripts/dev.sh release
 ```
 
 It links the preset's `_native.cpython-*.so` plus the `libpinpoint_cpp` version
-chain — `2.0.0 → 2 → plain` on macOS, the matching `.so.2.0.0 → .so.2 → .so`
-SONAME chain on Linux — after removing any previous chain, which a stale
-`libpinpoint_cpp.1.*` beside a new `2.*` would otherwise survive. Re-run it
+chain — `2.3.0 → 2 → plain` on macOS, the matching `.so.2.3.0 → .so.2 → .so`
+chain on Linux, where the full-version file is also the SONAME `_native` loads —
+after removing any previous chain, which a stale `libpinpoint_cpp.2.2.*`
+beside a new `2.3.*` would otherwise survive. Re-run it
 with the other preset to switch; only symlinks change, so `git status` stays
 clean either way.
 
@@ -192,7 +199,7 @@ to resolve `libgrpc++` at import and collection errors out. Healthy agent
 startup logs:
 
 ```
-[info][pinpoint][grpc.cpp:...] success to register the agent
+[info][pinpoint][grpc.cpp:...] AgentInfo sent
 ```
 
 ## 7. Adding a bundled auto-instrumentation
@@ -379,7 +386,7 @@ A leftover flask process — or, on macOS, "AirPlay Receiver".
 lsof -ti :5000 | xargs kill -9
 ```
 
-### No gRPC registration line, or `address of collector is required`
+### No gRPC registration line, or `agent not started: Collector.Host is required`
 Set `PINPOINT_PY_LOG_LEVEL=INFO` and read the C++-side effective config dump on
 stdout. An empty `Collector.Host` there means the YAML key mapping in
 [`config.py:to_yaml`](../pinpoint/config.py) is out of sync with what

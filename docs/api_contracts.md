@@ -80,9 +80,14 @@ streams instead of holding everything; the rest flushes **when `span.end()`
 runs**. Buffering does not distort the trace — every event keeps the
 timestamps, sequence and depth it was recorded with. Consequences:
 
-- At most **5000 annotations** are buffered per span/event; beyond the cap
+- At most **1000 annotations** are buffered per span/event; beyond the cap
   they are dropped and a single marker annotation
-  (`pinpoint: annotations truncated at 5000`) records the truncation.
+  (`pinpoint: annotations truncated at 1000`) records the truncation. The cap
+  sits below the native agent's own limit of 1024 annotations per span/event,
+  which counts the ones it adds itself (the span's HTTP status code), so the
+  marker and those still reach the collector. A span's own annotations are
+  sent only with its final chunk, so a long-lived span that annotates per
+  message should record on short-lived span events instead.
 - `annotate_int` travels as **int32**. Use `annotate_long` for values that
   can exceed it — Kafka offsets, byte counts, timestamps — an overflowing
   `annotate_int` is dropped at finalize.
@@ -101,7 +106,7 @@ timestamps, sequence and depth it was recorded with. Consequences:
 
 `set_sql_query`, recording-event `set_error`, and HTTP header recording are
 buffered the same way and flushed with the annotations at `end()` — the
-5000-entry cap above includes them. A recording event's `set_error` still
+1000-entry cap above includes them. A recording event's `set_error` still
 captures the Python call stack **where you called it**, not where the buffer is
 flushed, so the recorded frames point at the failure. Overflow and unsampled
 errors retain only the error name and message; they never collect call stacks
@@ -229,6 +234,10 @@ event.annotate_string(CUSTOM_USER_ID_KEY, user_id)
 The `rpc_point` argument of `new_span()` is not interned — it may safely carry
 the actual request path.
 
+An operation name over 1024 bytes and an error name over 256 bytes are
+cached and sent abbreviated: their first 1024 (or 256) bytes plus
+`...(<length>)`.
+
 ## 9. Error Recording and Call Stacks
 
 - `set_error()` on the **span** records that error there; `set_error()` on a
@@ -321,7 +330,11 @@ opt-in; the disabled path allocates no queue, callback or consumer thread.
 bounded queue by the native side and delivered by one daemon Python thread through
 ordinary `logging.Logger.log` calls, so handler and filter behavior is standard
 and a slow or throwing handler can delay or drop Python delivery without ever
-stalling the agent.
+stalling the agent. For the same reason a handler may call
+`pinpoint.shutdown()` or `pinpoint.reload_config()` in reaction to a line.
+The native agent forbids those calls from inside its log sink, where they can
+deadlock, but the bridge's sink only copies the record into the queue; the
+handler runs later, on the consumer thread.
 
 - The queue holds 2–4096 records (1024 by default) and 4 MiB of payload,
   whichever comes first; a single message is capped at 4 KiB, truncated at a

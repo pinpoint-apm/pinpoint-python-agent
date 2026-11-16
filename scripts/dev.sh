@@ -95,6 +95,8 @@ _pp_dev() {
 
         full="$(basename "$lib")"       # libpinpoint_cpp.M.m.p.dylib / .so.M.m.p
         # Drop minor/patch, keeping the extension where the platform puts it.
+        # Cores before 2.3.0 had this major-only SONAME; from 2.3.0 the SONAME
+        # is `full` itself, and the major link only completes the chain.
         if [[ "$full" == *.dylib ]]; then
             major="${full%.*.*.dylib}.dylib"        # libpinpoint_cpp.M.dylib
         else
