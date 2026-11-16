@@ -51,7 +51,7 @@ from .._kafka import (
 from .._util import no_current_span, span_event_scope
 
 _log = get_logger("confluent_kafka")
-_OPERATION_PRODUCER_PRODUCE = "confluent_kafka.Producer.produce"
+_OPERATION_PRODUCER_PRODUCE = "confluent_kafka.Producer.produce()"
 
 
 class ConfluentKafkaInstrumentor(BaseInstrumentor):

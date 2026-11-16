@@ -52,7 +52,7 @@ def test_single_key_command_emits_event_with_key_in_api(push_span, command):
 
     wrapper = pymemcache_instr._make_wrapper(command)
     wrapper(wrapped, _Client(), ("user:42", b"value"), {})
-    operation = f"pymemcache.client.base.Client.{command}"
+    operation = f"pymemcache.client.base.Client.{command}()"
     assert ("event_start", "root", operation) in rec.events
     assert ("event_end", "root", operation) in rec.events
 
@@ -77,7 +77,7 @@ def test_multi_key_command_renders_joined_keys(push_span, command, arg, expected
     wrapper = pymemcache_instr._make_wrapper(command)
     wrapper(wrapped, _Client(), (arg,), {})
     starts = [e for e in rec.events if e[0] == "event_start"]
-    assert starts and starts[-1][2] == f"pymemcache.client.base.Client.{command}"
+    assert starts and starts[-1][2] == f"pymemcache.client.base.Client.{command}()"
     # The API annotation feeds off _summarize_key; assert its rendering
     # directly since the fake event recorder doesn't surface annotations.
     assert pymemcache_instr._summarize_key(command, (arg,), {}) == expected_keys
@@ -113,7 +113,7 @@ def test_argless_command_still_traces(push_span, command):
 
     wrapper = pymemcache_instr._make_wrapper(command)
     wrapper(wrapped, _Client(), (), {})
-    assert ("event_start", "root", f"pymemcache.client.base.Client.{command}") in rec.events
+    assert ("event_start", "root", f"pymemcache.client.base.Client.{command}()") in rec.events
 
 
 # ---------------------------------------------------------------------------

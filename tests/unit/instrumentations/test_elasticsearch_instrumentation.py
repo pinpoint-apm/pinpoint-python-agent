@@ -109,7 +109,7 @@ def test_sync_wrapper_emits_event_with_destination_and_service_type(push_span):
     )
     assert isinstance(result, _V8Response)
 
-    operation = "elastic_transport.Transport.perform_request"
+    operation = "elastic_transport.Transport.perform_request()"
     assert ("event_start", "root", operation) in rec.events
     assert ("event_end", "root", operation) in rec.events
 
@@ -222,7 +222,7 @@ def test_sync_wrapper_records_exception(push_span):
     assert (
         "event_end",
         "root",
-        "elastic_transport.Transport.perform_request",
+        "elastic_transport.Transport.perform_request()",
     ) in rec.events
 
 
@@ -279,7 +279,7 @@ def test_async_wrapper_emits_event(push_span):
         kwargs={"body": {"name": "alice"}},
     ))
     assert isinstance(out, _V8Response)
-    operation = "elastic_transport.AsyncTransport.perform_request"
+    operation = "elastic_transport.AsyncTransport.perform_request()"
     assert ("event_start", "root", operation) in rec.events
     assert ("event_end", "root", operation) in rec.events
 
@@ -462,7 +462,7 @@ def test_op_name_falls_back_when_url_missing(push_span):
     assert (
         "event_start",
         "root",
-        "elastic_transport.Transport.perform_request",
+        "elastic_transport.Transport.perform_request()",
     ) in rec.events
 
 

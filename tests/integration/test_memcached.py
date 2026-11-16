@@ -24,7 +24,7 @@ pymemcache = pytest.importorskip("pymemcache")
 from pinpoint.annotation import ANNOTATION_ARG0
 from pinpoint.service_type import SERVICE_TYPE_MEMCACHED
 
-_OP = "pymemcache.client.base.Client.{}"
+_OP = "pymemcache.client.base.Client.{}()"
 
 
 @pytest.fixture(scope="module", autouse=True)

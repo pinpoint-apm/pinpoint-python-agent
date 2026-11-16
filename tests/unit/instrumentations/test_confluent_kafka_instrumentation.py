@@ -107,7 +107,7 @@ def test_produce_emits_event_and_injects_headers(push_span):
         wrapped, instance=_Producer(),
         args=("orders", b"payload"), kwargs={},
     )
-    operation = "confluent_kafka.Producer.produce"
+    operation = "confluent_kafka.Producer.produce()"
     assert ("event_start", "root", operation) in rec.events
     assert ("event_end", "root", operation) in rec.events
     headers = dict(captured["kwargs"]["headers"])
@@ -520,7 +520,7 @@ def test_serializing_producer_headers_positional_index_6(push_span):
     ck_instr._serializing_producer_produce_wrapper(
         wrapped, instance=_Producer(), args=positional, kwargs={},
     )
-    operation = "confluent_kafka.Producer.produce"
+    operation = "confluent_kafka.Producer.produce()"
     assert ("event_start", "root", operation) in rec.events
     assert ("event_end", "root", operation) in rec.events
     # Merged into the positional slot (no kwarg collision — the mirrored-signature

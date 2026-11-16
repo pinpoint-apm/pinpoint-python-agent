@@ -42,7 +42,7 @@ from ...context import current_span
 from ...instrumentor import BaseInstrumentor
 from .._util import claim_handoff, mint_async_child, reclaim_handoff, wrap
 
-_OPERATION_SYNC_TO_ASYNC = "asgiref.sync_to_async"
+_OPERATION_SYNC_TO_ASYNC = "asgiref.sync.SyncToAsync.__call__()"
 
 # One-element hand-off latch, published by the dispatching loop thread and claimed
 # by the worker in asgiref's copied context. Claiming mutates the list, never the

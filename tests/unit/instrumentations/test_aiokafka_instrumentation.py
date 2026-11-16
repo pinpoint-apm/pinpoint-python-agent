@@ -68,7 +68,7 @@ def test_producer_send_emits_event_and_injects_headers(push_span):
         wrapped, instance=None,
         args=("billing", b"payload"), kwargs={"key": b"k"},
     ))
-    operation = "aiokafka.producer.producer.AIOKafkaProducer.send"
+    operation = "aiokafka.producer.producer.AIOKafkaProducer.send()"
     assert ("event_start", "root", operation) in rec.events
     assert ("event_end", "root", operation) in rec.events
     headers = captured["kwargs"].get("headers")
@@ -191,7 +191,7 @@ def test_producer_send_setup_failure_still_sends_no_leak(push_span, monkeypatch)
     assert out == "sent"
     assert captured["args"] == ("topic", b"payload")
     assert captured["kwargs"] == {}
-    operation = "aiokafka.producer.producer.AIOKafkaProducer.send"
+    operation = "aiokafka.producer.producer.AIOKafkaProducer.send()"
     # Event was opened, then ended on failure — no leaked span event.
     assert ("event_start", "root", operation) in rec.events
     assert ("event_end", "root", operation) in rec.events

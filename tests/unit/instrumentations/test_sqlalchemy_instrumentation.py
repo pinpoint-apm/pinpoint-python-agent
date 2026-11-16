@@ -119,7 +119,7 @@ def test_orm_statement_over_instrumented_driver_traces_once(sql_push_span, monke
     assert out == "executed:SELECT 1"
     starts = [e for e in rec.events if e[0] == "event_start"]
     assert len(starts) == 1, f"expected 1 DB event, got {len(starts)}: {starts}"
-    assert starts[0][2] == "sqlalchemy.engine.Engine.before_cursor_execute"
+    assert starts[0][2] == "sqlalchemy.engine.Engine.before_cursor_execute()"
 
 
 def test_raw_dbapi_without_sqlalchemy_still_traces_once(sql_push_span, monkeypatch):
@@ -132,7 +132,7 @@ def test_raw_dbapi_without_sqlalchemy_still_traces_once(sql_push_span, monkeypat
 
     starts = [e for e in rec.events if e[0] == "event_start"]
     assert len(starts) == 1
-    assert starts[0][2] == "fake_drv_raw.Cursor.execute"
+    assert starts[0][2] == "fake_drv_raw.Cursor.execute()"
 
 
 def test_suppression_resets_so_later_raw_query_traces(sql_push_span, monkeypatch):
@@ -147,8 +147,8 @@ def test_suppression_resets_so_later_raw_query_traces(sql_push_span, monkeypatch
     cursor.execute("SELECT 2")  # raw, outside SQLAlchemy
     starts = [e for e in rec.events if e[0] == "event_start"]
     assert len(starts) == 2
-    assert starts[0][2] == "sqlalchemy.engine.Engine.before_cursor_execute"
-    assert starts[1][2] == "fake_drv_reset.Cursor.execute"
+    assert starts[0][2] == "sqlalchemy.engine.Engine.before_cursor_execute()"
+    assert starts[1][2] == "fake_drv_reset.Cursor.execute()"
 
 
 def test_suppression_resets_after_error(sql_push_span, monkeypatch):
@@ -185,7 +185,7 @@ def test_executemany_through_sqlalchemy_traces_once(sql_push_span, monkeypatch):
 
     starts = [e for e in rec.events if e[0] == "event_start"]
     assert len(starts) == 1, f"expected 1 DB event, got {len(starts)}"
-    assert starts[0][2] == "sqlalchemy.engine.Engine.before_cursor_execute"
+    assert starts[0][2] == "sqlalchemy.engine.Engine.before_cursor_execute()"
 
 
 def test_before_failure_resets_suppression_so_later_raw_query_traces(sql_push_span, monkeypatch):
@@ -222,7 +222,7 @@ def test_before_failure_resets_suppression_so_later_raw_query_traces(sql_push_sp
         starts = [e for e in rec.events if e[0] == "event_start"]
         assert len(starts) == 1, (
             f"raw query after a failed _before must trace once, got {starts}")
-        assert starts[0][2] == "fake_drv_before_boom.Cursor.execute"
+        assert starts[0][2] == "fake_drv_before_boom.Cursor.execute()"
     finally:
         # Defensive: if the leak regresses, don't pin the contextvar True for
         # the rest of the process and cascade-fail sibling tests.

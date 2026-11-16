@@ -49,7 +49,7 @@ from aiohttp import web
 
 async def user_detail(request):
     # Root span   : aiohttp HTTP Server  (GET /users/{uid})
-    #  └─ event   : user_detail
+    #  └─ event   : app.user_detail()
     #      └─ event: GET http://profile.internal/...   <- client side, headers injected
     async with aiohttp.ClientSession() as session:
         async with session.get("http://profile.internal/profiles/1") as resp:

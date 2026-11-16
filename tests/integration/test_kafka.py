@@ -93,7 +93,7 @@ def test_kafka_python_producer_and_consumer(kafka_container, traced,
     finally:
         producer.close()
 
-    ev = traced.single("kafka.producer.kafka.KafkaProducer.send")
+    ev = traced.single("kafka.producer.kafka.KafkaProducer.send()")
     assert ev.ended
     assert ev.service_type == SERVICE_TYPE_KAFKA_CLIENT
     assert ev.destination == bootstrap
@@ -126,7 +126,7 @@ def test_confluent_kafka_producer_and_consumer(kafka_container, traced,
     producer.produce(topic, value=b"payload")
     assert producer.flush(30) == 0
 
-    ev = traced.single("confluent_kafka.Producer.produce")
+    ev = traced.single("confluent_kafka.Producer.produce()")
     assert ev.ended
     assert ev.service_type == SERVICE_TYPE_KAFKA_CLIENT
     assert ev.destination == bootstrap
@@ -181,7 +181,7 @@ def test_aiokafka_producer_and_consumer(kafka_container, traced,
     record = asyncio.run(main())
     assert record.value == b"payload"
 
-    ev = traced.single("aiokafka.producer.producer.AIOKafkaProducer.send")
+    ev = traced.single("aiokafka.producer.producer.AIOKafkaProducer.send()")
     assert ev.ended
     assert ev.service_type == SERVICE_TYPE_KAFKA_CLIENT
     assert ev.destination == bootstrap

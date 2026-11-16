@@ -607,6 +607,31 @@ def test_span_event_annotations_and_api_metadata(core_agent, collector):
     assert ev_pb.apiId == meta.apiId
 
 
+class _Billing:
+    @pinpoint.spanevent
+    def charge(self):
+        return "charged"
+
+
+def test_spanevent_api_metadata_is_a_java_style_api_descriptor(
+        core_agent, collector):
+    """An unnamed @spanevent reaches the collector as the Java agent's API
+    descriptor, ``module.Class.method()``, with the DEFAULT method type —
+    the shape Pinpoint Web's ApiDescriptionParser splits into the call tree's
+    Class (``_Billing``) and Method (``charge()``) columns."""
+    agent, _ = core_agent()
+
+    with agent.new_span("core-qualified-root", "/core/qualified"):
+        assert _Billing().charge() == "charged"
+
+    pb = collector.wait_span("/core/qualified")
+    assert len(pb.spanEvent) == 1
+    api_info = f"{__name__}._Billing.charge()"
+    meta = collector.wait_api_meta(api_info)
+    assert pb.spanEvent[0].apiId == meta.apiId
+    assert meta.type == 0  # MethodType.DEFAULT: the type Web parses
+
+
 def test_annotation_cap_keeps_marker_and_status_code_on_the_wire(
         core_agent, collector):
     """Native keeps at most 1024 annotations per span or event and drops every

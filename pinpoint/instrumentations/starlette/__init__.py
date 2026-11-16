@@ -50,7 +50,7 @@ from .._util import (
 from ..asgi import PinpointASGIMiddleware
 
 _log = get_logger("starlette")
-_OPERATION_THREADPOOL = "starlette.threadpool"
+_OPERATION_THREADPOOL = "starlette.concurrency.run_in_threadpool()"
 
 # Every module here imports ``run_in_threadpool`` by value before our autoload
 # hook fires, so patching only the defining module leaves the aliases raw. The

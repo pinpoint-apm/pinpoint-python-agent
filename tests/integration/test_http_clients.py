@@ -35,8 +35,8 @@ from pinpoint.annotation import (
 )
 from pinpoint.service_type import SERVICE_TYPE_PYTHON_HTTP_CLIENT
 
-_OP_REQUESTS = "requests.sessions.Session.send"
-_OP_URLLIB3 = "urllib3.connectionpool.HTTPConnectionPool.urlopen"
+_OP_REQUESTS = "requests.sessions.Session.send()"
+_OP_URLLIB3 = "urllib3.connectionpool.HTTPConnectionPool.urlopen()"
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -105,7 +105,7 @@ def test_httpx_sync_and_async(http_echo_container, traced):
     url = http_echo_container["url"] + "/httpx"
     resp = httpx.get(url)
     assert resp.status_code == 200
-    sync_ev = traced.single("httpx.Client.send")
+    sync_ev = traced.single("httpx.Client.send()")
     assert sync_ev.ended
     assert sync_ev.ann(ANNOTATION_HTTP_URL) == [url]
     assert sync_ev.ann(ANNOTATION_HTTP_STATUS_CODE) == [200]
@@ -118,7 +118,7 @@ def test_httpx_sync_and_async(http_echo_container, traced):
 
     resp = asyncio.run(main())
     assert resp.status_code == 200
-    async_ev = traced.single("httpx.AsyncClient.send")
+    async_ev = traced.single("httpx.AsyncClient.send()")
     assert async_ev.ended
     assert async_ev.ann(ANNOTATION_HTTP_STATUS_CODE) == [200]
 
@@ -145,7 +145,7 @@ def test_aiohttp_client_records_event_and_propagates(http_echo_container,
     status, body = asyncio.run(main())
     assert status == 200
 
-    ev = traced.single("aiohttp.client.ClientSession._request")
+    ev = traced.single("aiohttp.client.ClientSession._request()")
     assert ev.ended
     assert ev.service_type == SERVICE_TYPE_PYTHON_HTTP_CLIENT
     netloc = f"{http_echo_container['host']}:{http_echo_container['port']}"
@@ -187,7 +187,7 @@ def test_aiohttp_client_connection_error_recorded(traced):
     with pytest.raises(aiohttp.ClientConnectorError):
         asyncio.run(main())
 
-    ev = traced.single("aiohttp.client.ClientSession._request")
+    ev = traced.single("aiohttp.client.ClientSession._request()")
     assert ev.ended
     assert ev.error is not None
     assert ev.ann(ANNOTATION_HTTP_STATUS_CODE) == []

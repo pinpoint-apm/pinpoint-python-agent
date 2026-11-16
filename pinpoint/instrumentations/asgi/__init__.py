@@ -82,7 +82,7 @@ class PinpointASGIMiddleware:
         # handler event (the Starlette wrapper below); a second, outer event
         # named after its middleware stack would be noise.
         self._entry_event = (
-            callable_operation_name(app, default="asgi.app")
+            callable_operation_name(app, default="asgi.app()")
             if entry_event else "")
         # That handler event only exists when a handler actually runs. A
         # request matching no route reaches none — Starlette answers a 404 from
@@ -93,7 +93,7 @@ class PinpointASGIMiddleware:
         # stack, whose outermost layer is an internal ("ServerErrorMiddleware"
         # on a 404 reads as both wrong and alarming).
         self._fallback_event = (
-            "" if entry_event else f"{framework_name.lower()}.no_route")
+            "" if entry_event else f"{framework_name.lower()}.no_route()")
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         await _trace_asgi_request(

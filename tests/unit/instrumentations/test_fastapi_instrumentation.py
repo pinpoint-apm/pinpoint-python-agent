@@ -64,11 +64,11 @@ def test_run_endpoint_wrapper_emits_event_with_qualname(push_span):
     assert out == {"id": 1}
     # Inner functions get a `<locals>.` prefix in __qualname__, so match on suffix.
     assert any(
-        kind == "event_start" and op == "root" and name.endswith(".get_user_handler")
+        kind == "event_start" and op == "root" and name == f"{__name__}.test_run_endpoint_wrapper_emits_event_with_qualname.get_user_handler()"
         for kind, op, name in rec.events
     )
     assert any(
-        kind == "event_end" and op == "root" and name.endswith(".get_user_handler")
+        kind == "event_end" and op == "root" and name == f"{__name__}.test_run_endpoint_wrapper_emits_event_with_qualname.get_user_handler()"
         for kind, op, name in rec.events
     )
 
@@ -89,7 +89,7 @@ def test_run_endpoint_wrapper_records_exception_and_reraises(push_span):
         ))
     assert any(e[0] == "event_error" for e in rec.events)
     assert any(
-        kind == "event_end" and op == "root" and name.endswith(".boom")
+        kind == "event_end" and op == "root" and name == f"{__name__}.test_run_endpoint_wrapper_records_exception_and_reraises.boom()"
         for kind, op, name in rec.events
     )
 
@@ -178,7 +178,7 @@ def test_run_endpoint_wrapper_unwraps_decorated_endpoints(push_span):
         args=(_make_dependant(decorator_wrapper),), kwargs={},
     ))
     assert any(
-        kind == "event_start" and op == "root" and name.endswith(".real_handler")
+        kind == "event_start" and op == "root" and name == f"{__name__}.test_run_endpoint_wrapper_unwraps_decorated_endpoints.real_handler()"
         for kind, op, name in rec.events
     )
 
@@ -432,7 +432,7 @@ def test_fastapi_real_app_emits_exactly_one_span_per_request(monkeypatch):
     assert handler_headers[0]["Pinpoint-pSpanID"] == "7"
     assert int(handler_headers[0]["Pinpoint-SpanID"]) != 0
     handler_events = [name for _, _, name in span_events
-                      if name.endswith(".items")]
+                      if name.endswith(".items()")]
     assert len(handler_events) == 1, f"endpoint span event mismatch: {events}"
     assert any(name == "sync-handler-child" for _, _, name in span_events), (
         f"sync handler child event missing: {events}"

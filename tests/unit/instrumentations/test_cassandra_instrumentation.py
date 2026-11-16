@@ -57,8 +57,8 @@ def test_execute_emits_event_with_keyspace_destination(sql_push_span, sql_bind_v
         kwargs={},
     )
     assert out == ["row"]
-    assert ("event_start", "root", "cassandra.cluster.Session.execute") in rec.events
-    assert ("event_end", "root", "cassandra.cluster.Session.execute") in rec.events
+    assert ("event_start", "root", "cassandra.cluster.Session.execute()") in rec.events
+    assert ("event_end", "root", "cassandra.cluster.Session.execute()") in rec.events
     sql_events = [e for e in rec.events if e[0] == "sql"]
     assert sql_events
     sql_text, params_text = sql_events[-1][2], sql_events[-1][3]
@@ -110,7 +110,7 @@ def test_execute_async_uses_distinct_op_name(sql_push_span):
         wrapped, instance=_Session(),
         args=("SELECT 1",), kwargs={},
     )
-    assert ("event_start", "root", "cassandra.cluster.Session.execute_async") in rec.events
+    assert ("event_start", "root", "cassandra.cluster.Session.execute_async()") in rec.events
 
 
 def test_execute_no_active_span_passes_through():
@@ -247,7 +247,7 @@ def test_sync_execute_suppresses_nested_execute_async_event(sql_push_span):
     )
     assert out == ["row"]
     starts = [e for e in rec.events if e[0] == "event_start"]
-    assert starts == [("event_start", "root", "cassandra.cluster.Session.execute")]
+    assert starts == [("event_start", "root", "cassandra.cluster.Session.execute()")]
 
 
 def test_direct_execute_async_still_emits_event(sql_push_span):
@@ -259,7 +259,7 @@ def test_direct_execute_async_still_emits_event(sql_push_span):
         args=("SELECT 1", None), kwargs={},
     )
     assert (
-        "event_start", "root", "cassandra.cluster.Session.execute_async",
+        "event_start", "root", "cassandra.cluster.Session.execute_async()",
     ) in rec.events
 
 

@@ -138,6 +138,17 @@ def _is_grpc_abort(exc: BaseException, context: Any) -> bool:
         return True
 
 
+def _event_name(method: str) -> str:
+    """The span-event name for a gRPC method path, in the Java agent's API
+    descriptor form: ``/helloworld.Greeter/SayHello`` →
+    ``helloworld.Greeter.SayHello()``, so Pinpoint Web's call tree shows the
+    service (``Greeter``) in its Class column and ``SayHello()`` as the method.
+    """
+    if not isinstance(method, str) or not method:
+        return method
+    return method.lstrip("/").replace("/", ".") + "()"
+
+
 def _open_handler_event(span: Any, method: str) -> Any:
     """One span event covering the handler, named for the RPC method.
 
@@ -145,7 +156,7 @@ def _open_handler_event(span: Any, method: str) -> Any:
     empty call tree — the span's own rpc name is all the UI has to show.
     """
     try:
-        return span.new_span_event(method)
+        return span.new_span_event(_event_name(method))
     except Exception:  # noqa: BLE001
         return None
 
@@ -456,7 +467,7 @@ class _PinpointClientInterceptor(*_grpc_interceptor_bases(
         # call — every helper below (annotate/end/error) is a no-op on ``None``.
         try:
             event = span.new_span_event(
-                method, service_type=SERVICE_TYPE_GRPC,
+                _event_name(method), service_type=SERVICE_TYPE_GRPC,
             )
         except Exception:  # noqa: BLE001
             event = None

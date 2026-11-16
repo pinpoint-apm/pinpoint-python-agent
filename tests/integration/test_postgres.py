@@ -45,7 +45,7 @@ def test_psycopg3_execute(postgres_container, traced, sql_bind_values_on):
             cur.execute("SELECT %s::int + %s::int", (1, 2))
             assert cur.fetchone() == (3,)
 
-    ev = traced.single("psycopg.Cursor.execute")
+    ev = traced.single("psycopg.Cursor.execute()")
     assert ev.ended
     assert ev.service_type == SERVICE_TYPE_POSTGRESQL
     assert ev.endpoint == (
@@ -63,7 +63,7 @@ def test_psycopg3_bind_values_off_by_default(postgres_container, traced):
             cur.execute("SELECT %s::text", ("sensitive-value",))
             assert cur.fetchone() == ("sensitive-value",)
 
-    ev = traced.single("psycopg.Cursor.execute")
+    ev = traced.single("psycopg.Cursor.execute()")
     assert ev.ended
     assert ev.sql == [("SELECT %s::text", "")]
 
@@ -73,7 +73,7 @@ def test_psycopg3_error_recorded(postgres_container, traced):
         with pytest.raises(psycopg.errors.UndefinedTable):
             conn.execute("SELECT * FROM no_such_table_it")
 
-    events = [e for e in traced.events if e.operation == "psycopg.Cursor.execute"]
+    events = [e for e in traced.events if e.operation == "psycopg.Cursor.execute()"]
     assert events and events[-1].ended
     assert events[-1].error is not None
     assert events[-1].error[0] == "UndefinedTable"
@@ -91,7 +91,7 @@ def test_psycopg3_async_execute(postgres_container, traced):
 
     assert asyncio.run(main()) == ("hello",)
 
-    ev = traced.single("psycopg.AsyncCursor.execute")
+    ev = traced.single("psycopg.AsyncCursor.execute()")
     assert ev.ended
     assert ev.service_type == SERVICE_TYPE_POSTGRESQL
     assert ev.destination == postgres_container["database"]
@@ -124,7 +124,7 @@ def test_asyncpg_fetch_and_execute(postgres_container, traced,
     assert [r["v"] for r in rows] == [1]
 
     executes = [e for e in traced.events_named(
-        "asyncpg.connection.Connection.execute") if e.ended]
+        "asyncpg.connection.Connection.execute()") if e.ended]
     assert len(executes) == 2
     insert_ev = executes[-1]
     assert insert_ev.service_type == SERVICE_TYPE_POSTGRESQL
@@ -133,7 +133,7 @@ def test_asyncpg_fetch_and_execute(postgres_container, traced,
     assert insert_ev.destination == postgres_container["database"]
     assert insert_ev.sql == [("INSERT INTO it_kv VALUES ($1, $2)", "('a', 1)")]
 
-    fetch_ev = traced.single("asyncpg.connection.Connection.fetch")
+    fetch_ev = traced.single("asyncpg.connection.Connection.fetch()")
     assert fetch_ev.ended
     assert fetch_ev.sql == [("SELECT v FROM it_kv WHERE k = $1", "('a',)")]
 
@@ -180,7 +180,7 @@ def test_asyncpg_batch_scalar_and_cursor_paths(postgres_container, traced,
     assert asyncio.run(main()) == (1, 2, [1, 2])
 
     executemany = traced.single(
-        "asyncpg.connection.Connection.executemany")
+        "asyncpg.connection.Connection.executemany()")
     assert executemany.ended
     assert executemany.service_type == SERVICE_TYPE_POSTGRESQL
     assert executemany.destination == postgres_container["database"]
@@ -189,17 +189,17 @@ def test_asyncpg_batch_scalar_and_cursor_paths(postgres_container, traced,
         "INSERT INTO it_asyncpg_methods VALUES ($1, $2)")
     assert "('a', 1)" in executemany.sql[0][1]
 
-    fetchrow = traced.single("asyncpg.connection.Connection.fetchrow")
+    fetchrow = traced.single("asyncpg.connection.Connection.fetchrow()")
     assert fetchrow.ended
     assert fetchrow.sql == [
         ("SELECT v FROM it_asyncpg_methods WHERE k = $1", "('a',)")]
 
-    fetchval = traced.single("asyncpg.connection.Connection.fetchval")
+    fetchval = traced.single("asyncpg.connection.Connection.fetchval()")
     assert fetchval.ended
     assert fetchval.sql == [
         ("SELECT v FROM it_asyncpg_methods WHERE k = $1", "('b',)")]
 
-    cursor = traced.single("asyncpg.connection.Connection.cursor")
+    cursor = traced.single("asyncpg.connection.Connection.cursor()")
     assert cursor.ended
     assert cursor.sql == [
         ("SELECT v FROM it_asyncpg_methods ORDER BY v", "")]
@@ -228,7 +228,7 @@ def test_asyncpg_awaited_error_ends_and_marks_event(postgres_container,
     with pytest.raises(asyncpg.UndefinedTableError):
         asyncio.run(main())
 
-    event = traced.single("asyncpg.connection.Connection.fetch")
+    event = traced.single("asyncpg.connection.Connection.fetch()")
     assert event.ended
     assert event.error is not None
     assert event.error[0] == "UndefinedTableError"

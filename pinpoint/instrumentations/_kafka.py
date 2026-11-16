@@ -35,9 +35,9 @@ from ._util import close_span_scope, end_quietly, span_is_sampled
 
 _OPERATION_CONSUMER_INVOCATION = "Kafka Consumer Invocation"
 # The one event a delivery span carries. Named like the AMQP consumer's
-# "pika.consume" / "aio_pika.consume" rather than per-client, since the client
+# "pika.consume()" / "aio_pika.consume()" rather than per-client, since the client
 # is already identifiable from the application itself.
-_OPERATION_CONSUME = "kafka.consume"
+_OPERATION_CONSUME = "kafka.consume()"
 
 
 # Kafka headers are application-controlled binary data. Keep both propagation

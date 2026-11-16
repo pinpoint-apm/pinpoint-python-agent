@@ -18,8 +18,9 @@ app. Hence a dedicated hook.
 
 - **Root span per request**, opened outside every user middleware.
 - **Handler span event** — from `run_endpoint_function`, named after the user's
-  handler qualname (`UserService.create_user`), so the UI shows the actual
-  handler and not just the route.
+  handler as `module.qualname()` (`services.UserService.create_user()`), so the
+  UI shows the actual handler — its class in the call tree's Class column — and
+  not just the route.
 - **URL statistics per route template** — FastAPI's `APIRoute.matches` exposes
   the matched route under `scope['route']`, which the outer ASGI middleware
   reads at span end. No extra send wrapper needed.
@@ -51,7 +52,7 @@ app = FastAPI()
 @app.get("/users/{uid}")
 async def user_detail(uid: int):
     # Root span   : FastAPI HTTP Server  (GET /users/{uid})
-    #  └─ event   : user_detail
+    #  └─ event   : app.user_detail()
     #      └─ event: GET http://profile.internal/...   <- httpx, headers injected
     async with httpx.AsyncClient() as client:
         await client.get(f"http://profile.internal/profiles/{uid}")

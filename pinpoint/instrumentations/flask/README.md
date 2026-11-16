@@ -17,8 +17,10 @@ so every inbound request becomes a Pinpoint transaction.
   the HTTP URL, status code, client address, and the configured request/response
   header allow-list.
 - **View span event** — a child event named after the resolved view function
-  (`views.user_detail`), with the matched route template (`/users/<int:uid>`)
-  handed to URL statistics so buckets are per route, not per concrete path.
+  in the Java agent's `module.qualname()` form (`views.user_detail()`, so the
+  call tree's Class column shows `views`), with the matched route template
+  (`/users/<int:uid>`) handed to URL statistics so buckets are per route, not
+  per concrete path.
 - Upstream `Pinpoint-*` headers are honored, so the request stitches into the
   caller's trace. Responses do not write them back — propagation is outbound only.
 - Uncaught exceptions are recorded on the span and re-raised untouched.
@@ -42,7 +44,7 @@ app = flask.Flask(__name__)
 @app.route("/users/<int:uid>")
 def user_detail(uid):
     # Root span   : Flask HTTP Server  (GET /users/<int:uid>)
-    #  └─ event   : views.user_detail
+    #  └─ event   : views.user_detail()
     #      └─ event: GET http://profile.internal/...   <- requests, headers injected
     requests.get(f"http://profile.internal/profiles/{uid}")
     return {"id": uid}

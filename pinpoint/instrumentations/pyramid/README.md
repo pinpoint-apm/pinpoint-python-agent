@@ -15,7 +15,7 @@ Instruments [Pyramid](https://trypyramid.com/) at its WSGI router entry point.
   the span covers the full request lifecycle including tweens.
 - **View span event** — `_call_view` is Pyramid's internal helper that resolves
   and invokes the matched view callable. The wrapper names the event after the
-  view qualname and lifts the matched route pattern onto
+  view's `module.qualname()` and lifts the matched route pattern onto
   `request.environ['pinpoint.url_pattern']` for URL-statistics aggregation.
 - Upstream `Pinpoint-*` headers stitch the request into the caller's trace.
 - Uncaught exceptions are recorded on the span and re-raised.
@@ -40,7 +40,7 @@ from pyramid.response import Response
 
 def user_detail(request):
     # Root span   : Pyramid HTTP Server  (GET /users/{uid})
-    #  └─ event   : user_detail
+    #  └─ event   : app.user_detail()
     return Response(f"user {request.matchdict['uid']}")
 
 with Configurator() as config:

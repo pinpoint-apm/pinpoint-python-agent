@@ -44,10 +44,10 @@ from .._util import (
     wrap,
 )
 
-_OPERATION_EXECUTE_COMMAND = "redis.client.Redis.execute_command"
-_OPERATION_PIPELINE_EXECUTE = "redis.client.Pipeline.execute"
-_OPERATION_ASYNC_EXECUTE_COMMAND = "redis.asyncio.client.Redis.execute_command"
-_OPERATION_ASYNC_PIPELINE_EXECUTE = "redis.asyncio.client.Pipeline.execute"
+_OPERATION_EXECUTE_COMMAND = "redis.client.Redis.execute_command()"
+_OPERATION_PIPELINE_EXECUTE = "redis.client.Pipeline.execute()"
+_OPERATION_ASYNC_EXECUTE_COMMAND = "redis.asyncio.client.Redis.execute_command()"
+_OPERATION_ASYNC_PIPELINE_EXECUTE = "redis.asyncio.client.Pipeline.execute()"
 _MAX_PIPELINE_COMMANDS = 20
 _MAX_PIPELINE_ANNOTATION_CHARS = 1024
 

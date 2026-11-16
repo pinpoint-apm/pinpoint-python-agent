@@ -84,7 +84,7 @@ def test_basic_publish_emits_event_and_injects_headers(push_span, monkeypatch):
         _wrapped, channel,
         ("my_exchange", "billing.charge", b"payload"), {},
     )
-    operation = "pika.channel.Channel.basic_publish"
+    operation = "pika.channel.Channel.basic_publish()"
     assert ("event_start", "root", operation) in rec.events
     assert ("event_end", "root", operation) in rec.events
     # Headers were injected — check on properties (kwargs["properties"]).
@@ -160,7 +160,7 @@ def test_basic_publish_records_exception_and_reraises(push_span, monkeypatch):
             _boom, _FakeChannel(), ("ex", "rk", b"x"), {},
         )
     assert any(e[0] == "event_error" for e in rec.events)
-    assert ("event_end", "root", "pika.channel.Channel.basic_publish") in rec.events
+    assert ("event_end", "root", "pika.channel.Channel.basic_publish()") in rec.events
 
 
 def test_basic_publish_no_parent_span_still_injects(monkeypatch):
@@ -219,7 +219,7 @@ def test_basic_consume_wrapper_wraps_callback(fake_agent):
     outer = "RabbitMQ Consumer Invocation"
     assert ("span_start", outer, "rabbitmq://exchange=ex") in fake_agent.events
     assert ("span_end", outer) in fake_agent.events
-    assert ("event_start", outer, "pika.consume") in fake_agent.events
+    assert ("event_start", outer, "pika.consume()") in fake_agent.events
     assert delivered  # user callback got the message
     # Upstream Pinpoint header present -> reader-backed native call.
     assert fake_agent.last_native.headers is not None

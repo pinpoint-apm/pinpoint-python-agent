@@ -44,9 +44,12 @@ from ..wsgi import wsgi_entry_wrapper
 
 _log = get_logger("django")
 _OPERATION_SERVER = "Django HTTP Server"
-# Placeholder name for the view span event until resolver_match is known;
-# survives only when Django never resolved the URL (e.g. 404 during routing).
-_OPERATION_VIEW_FALLBACK = "django.request"
+# Placeholder name for the view span event until resolver_match is known —
+# the handler method the event wraps; survives only when Django never resolved
+# the URL (e.g. 404 during routing).
+_OPERATION_VIEW_FALLBACK = "django.core.handlers.base.BaseHandler._get_response()"
+_OPERATION_VIEW_FALLBACK_ASYNC = (
+    "django.core.handlers.base.BaseHandler._get_response_async()")
 
 
 class DjangoInstrumentor(BaseInstrumentor):
@@ -227,7 +230,7 @@ async def _async_handler_wrapper(wrapped, instance, args, kwargs):
     # the asgi/starlette/fastapi/falcon async wrappers.
     try:
         event = span.new_span_event(
-            _OPERATION_VIEW_FALLBACK, service_type=SERVICE_TYPE_PYTHON_METHOD,
+            _OPERATION_VIEW_FALLBACK_ASYNC, service_type=SERVICE_TYPE_PYTHON_METHOD,
         )
     except Exception:  # noqa: BLE001
         _log.debug("new_span_event failed in async view wrapper", exc_info=True)

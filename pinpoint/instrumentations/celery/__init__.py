@@ -58,10 +58,10 @@ from .._util import (
     wrap,
 )
 
-_OPERATION_APPLY_ASYNC = "celery.app.task.Task.apply_async"
+_OPERATION_APPLY_ASYNC = "celery.app.task.Task.apply_async()"
 _OPERATION_WORKER_INVOCATION = "Celery Worker Invocation"
-# The one event a task-run span carries, named like "kafka.consume".
-_OPERATION_RUN = "celery.run"
+# The one event a task-run span carries, named like "kafka.consume()".
+_OPERATION_RUN = "celery.run()"
 # Celery's own task state constant, inlined so the module imports without it.
 _STATE_FAILURE = "FAILURE"
 # Where the worker side parks its open scope between prerun and postrun: the

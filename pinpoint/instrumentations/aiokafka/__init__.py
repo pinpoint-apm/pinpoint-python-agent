@@ -44,7 +44,7 @@ from .._kafka import (
 from .._util import span_event_scope, wrap
 
 _log = get_logger("aiokafka")
-_OPERATION_PRODUCER_SEND = "aiokafka.producer.producer.AIOKafkaProducer.send"
+_OPERATION_PRODUCER_SEND = "aiokafka.producer.producer.AIOKafkaProducer.send()"
 
 
 class AiokafkaInstrumentor(BaseInstrumentor):

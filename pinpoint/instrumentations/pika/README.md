@@ -19,7 +19,7 @@ your handler runs**, and downstream DB/HTTP/producer calls stitch onto it.
 `BlockingChannel.basic_publish` through this same method, so it covers blocking
 and non-blocking publishers alike. Per publish it:
 
-- opens a span event named `pika.publish <exchange>/<routing_key>`;
+- opens a span event named `pika.channel.Channel.basic_publish()`;
 - injects Pinpoint trace headers into `properties.headers` so an instrumented
   consumer stitches into the trace;
 - annotates the AMQP exchange and routing key.
@@ -60,7 +60,7 @@ import pika
 conn = pika.BlockingConnection(pika.ConnectionParameters("rabbit.internal"))
 channel = conn.channel()
 channel.basic_publish(exchange="", routing_key="orders", body=b'{"id": 1}')
-# └─ span event: RABBITMQ_CLIENT  pika.publish /orders   (headers injected)
+# └─ span event: RABBITMQ_CLIENT  pika.channel.Channel.basic_publish()   (headers injected)
 ```
 
 ```python

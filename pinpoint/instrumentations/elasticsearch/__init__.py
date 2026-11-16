@@ -51,9 +51,9 @@ from .._util import (
 )
 
 _log = get_logger("elasticsearch")
-_OPERATION_ELASTIC_TRANSPORT = "elastic_transport.Transport.perform_request"
-_OPERATION_ELASTIC_ASYNC_TRANSPORT = "elastic_transport.AsyncTransport.perform_request"
-_OPERATION_ES_TRANSPORT = "elasticsearch.Transport.perform_request"
+_OPERATION_ELASTIC_TRANSPORT = "elastic_transport.Transport.perform_request()"
+_OPERATION_ELASTIC_ASYNC_TRANSPORT = "elastic_transport.AsyncTransport.perform_request()"
+_OPERATION_ES_TRANSPORT = "elasticsearch.Transport.perform_request()"
 
 # Characters of DSL recorded per request; the rest is elided.
 _MAX_DSL_LENGTH = 256

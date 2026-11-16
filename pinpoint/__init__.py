@@ -160,6 +160,15 @@ def _resolve_op(fn: _Callable[..., _Any]) -> str:
     return getattr(fn, "__qualname__", None) or getattr(fn, "__name__", None) or "anonymous"
 
 
+def _resolve_event_op(fn: _Callable[..., _Any]) -> str:
+    # A span event is named like the Java agent's API descriptor —
+    # ``module.Class.method()`` — so Pinpoint Web shows the class in the call
+    # tree's Class column. A root span's name is shown as-is, and doubles as
+    # its default rpc, so @span keeps the bare qualname (_resolve_op).
+    from ._api_name import callable_api_name
+    return callable_api_name(fn, default="anonymous")
+
+
 def spanevent(
     operation: "str | _Callable[..., _Any] | None" = None,
     *,
@@ -172,6 +181,11 @@ def spanevent(
     No-op (the function still runs) when no span is current — same as
     :func:`trace`.
 
+    Without an explicit name the event is named like the Java agent's API
+    descriptor, ``module.qualname()`` (``billing.Invoice.compute()``), so
+    Pinpoint Web's call tree shows ``Invoice`` in its Class column. An
+    explicit name is used as given.
+
     >>> @pinpoint.spanevent
     ... def compute_invoice(order):
     ...     ...
@@ -183,7 +197,7 @@ def spanevent(
     import inspect
 
     def _wrap(fn: _Callable[..., _Any], op: str | None) -> _Callable[..., _Any]:
-        op_name = op or _resolve_op(fn)
+        op_name = op or _resolve_event_op(fn)
         if inspect.iscoroutinefunction(fn):
             @_functools.wraps(fn)
             async def _aw(*a: _Any, **kw: _Any) -> _Any:

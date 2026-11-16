@@ -38,7 +38,7 @@ from pinpoint.propagator import (HEADER_SAMPLED, HEADER_SPAN_ID,
 from pinpoint.service_type import (SERVICE_TYPE_CELERY,
                                    SERVICE_TYPE_CELERY_WORKER)
 
-_OP_PUBLISH = "celery.app.task.Task.apply_async"
+_OP_PUBLISH = "celery.app.task.Task.apply_async()"
 _OP_WORKER = "Celery Worker Invocation"
 _BROKER = "amqp://guest:guest@broker.test:5672//"
 
@@ -207,7 +207,7 @@ def test_prerun_opens_root_span_and_postrun_ends_it_once(fake_agent):
     celery_instr._on_postrun(task=task, task_id="t1", retval=3, state="SUCCESS")
 
     assert ppctx.current_span() is None
-    assert ("event_start", _OP_WORKER, "celery.run") in fake_agent.events
+    assert ("event_start", _OP_WORKER, "celery.run()") in fake_agent.events
     assert fake_agent.events.count(("span_end", _OP_WORKER)) == 1
     assert not hasattr(task.request, "_pinpoint_scope")
     # Span attributes are buffered Python-side and land on the native span at end.

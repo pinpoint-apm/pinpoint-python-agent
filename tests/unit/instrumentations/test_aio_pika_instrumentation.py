@@ -77,7 +77,7 @@ def test_exchange_publish_emits_event_and_injects_headers(push_span):
         wrapped, instance=_Exchange("billing"),
         args=(msg, "billing.charge"), kwargs={},
     ))
-    operation = "aio_pika.exchange.Exchange.publish"
+    operation = "aio_pika.exchange.Exchange.publish()"
     assert ("event_start", "root", operation) in rec.events
     assert ("event_end", "root", operation) in rec.events
     # During the publish the transport saw user + trace headers merged.
@@ -204,7 +204,7 @@ def test_exchange_publish_setup_failure_still_publishes_no_leak(push_span, monke
     # on the user-owned object.
     assert msg.headers is original_headers
     assert "Pinpoint-TraceID" not in msg.headers
-    operation = "aio_pika.exchange.Exchange.publish"
+    operation = "aio_pika.exchange.Exchange.publish()"
     # Event opened, then ended on failure — no leaked span event.
     assert ("event_start", "root", operation) in rec.events
     assert ("event_end", "root", operation) in rec.events
@@ -333,7 +333,7 @@ def test_queue_consume_wraps_callback(fake_agent):
     outer = "RabbitMQ Consumer Invocation"
     assert ("span_start", outer, "rabbitmq://exchange=ex") in fake_agent.events
     assert ("span_end", outer) in fake_agent.events
-    assert ("event_start", outer, "aio_pika.consume") in fake_agent.events
+    assert ("event_start", outer, "aio_pika.consume()") in fake_agent.events
     assert delivered == [msg]
 
 

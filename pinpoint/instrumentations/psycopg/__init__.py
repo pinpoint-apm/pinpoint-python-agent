@@ -107,21 +107,21 @@ def _traced_cursor_factory(base_cursor_cls):
         def execute(self, *args, **kwargs):
             return trace_cursor_call(
                 super().execute, self, args, kwargs,
-                operation="psycopg2.extensions.cursor.execute",
+                operation="psycopg2.extensions.cursor.execute()",
                 op_kind="execute", service_type=SERVICE_TYPE_POSTGRESQL,
             )
 
         def executemany(self, *args, **kwargs):
             return trace_cursor_call(
                 super().executemany, self, args, kwargs,
-                operation="psycopg2.extensions.cursor.executemany",
+                operation="psycopg2.extensions.cursor.executemany()",
                 op_kind="executemany", service_type=SERVICE_TYPE_POSTGRESQL,
             )
 
         def callproc(self, *args, **kwargs):
             return trace_cursor_call(
                 super().callproc, self, args, kwargs,
-                operation="psycopg2.extensions.cursor.callproc",
+                operation="psycopg2.extensions.cursor.callproc()",
                 op_kind="callproc", service_type=SERVICE_TYPE_POSTGRESQL,
             )
 

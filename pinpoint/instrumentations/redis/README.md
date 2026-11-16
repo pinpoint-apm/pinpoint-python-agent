@@ -41,7 +41,7 @@ import redis
 
 r = redis.Redis(host="cache.internal")
 r.get("user:1")
-# └─ span event: REDIS  Redis.execute_command   (GET user:1, cache.internal:6379)
+# └─ span event: REDIS  redis.client.Redis.execute_command()   (GET user:1, cache.internal:6379)
 
 with r.pipeline() as pipe:
     pipe.get("user:1").get("user:2")

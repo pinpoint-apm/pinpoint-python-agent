@@ -84,7 +84,7 @@ class PymemcacheInstrumentor(BaseInstrumentor):
 
 def _make_wrapper(command: str):
     # The operation string is fixed per wrapper; build it once, not per call.
-    operation = f"pymemcache.client.base.Client.{command}"
+    operation = f"pymemcache.client.base.Client.{command}()"
 
     def _wrapper(wrapped, instance, args, kwargs):
         return _trace_command(wrapped, instance, args, kwargs,

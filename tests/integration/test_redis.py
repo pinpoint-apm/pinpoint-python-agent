@@ -26,10 +26,10 @@ redis = pytest.importorskip("redis")
 from pinpoint.annotation import ANNOTATION_ARG0
 from pinpoint.service_type import SERVICE_TYPE_REDIS
 
-_OP_EXECUTE = "redis.client.Redis.execute_command"
-_OP_PIPELINE = "redis.client.Pipeline.execute"
-_OP_ASYNC_EXECUTE = "redis.asyncio.client.Redis.execute_command"
-_OP_ASYNC_PIPELINE = "redis.asyncio.client.Pipeline.execute"
+_OP_EXECUTE = "redis.client.Redis.execute_command()"
+_OP_PIPELINE = "redis.client.Pipeline.execute()"
+_OP_ASYNC_EXECUTE = "redis.asyncio.client.Redis.execute_command()"
+_OP_ASYNC_PIPELINE = "redis.asyncio.client.Pipeline.execute()"
 
 
 @pytest.fixture(scope="module", autouse=True)

@@ -176,7 +176,7 @@ def _wrap_cursor_methods(module, cursor_qualname, service_type,
         wrap(
             module, target,
             make_wrapper(op_kind, service_type, extract,
-                         operation=f"{module}.{target}"),
+                         operation=f"{module}.{target}()"),
         )
 
 

@@ -58,7 +58,7 @@ from .._util import (
     wrap,
 )
 
-_OPERATION_BASIC_PUBLISH = "pika.channel.Channel.basic_publish"
+_OPERATION_BASIC_PUBLISH = "pika.channel.Channel.basic_publish()"
 
 
 class PikaInstrumentor(BaseInstrumentor):
@@ -309,7 +309,7 @@ def _wrap_consumer_callback(callback):
         # dispatch loop — a None scope runs the handler untraced instead.
         scope = open_consumer_scope(
             agent, method, properties, channel, _connection_endpoint,
-            "pika.consume", held=True)
+            "pika.consume()", held=True)
         if scope is None:
             return callback(channel, method, properties, body)
         try:
@@ -391,7 +391,7 @@ def _open_consume_scope(agent, item, channel):
     properties = item[1] if len(item) > 1 else None
     return open_consumer_scope(
         agent, item[0], properties, channel,
-        _connection_endpoint, "pika.consume", held=True)
+        _connection_endpoint, "pika.consume()", held=True)
 
 
 _end_consume_scope = close_consumer_scope

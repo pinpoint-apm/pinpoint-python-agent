@@ -61,8 +61,8 @@ from .._util import (
 # than copying an unbounded string into ``set_sql_query`` on the hot path.
 _CQL_MAX_LEN = 1024
 
-_OPERATION_EXECUTE = "cassandra.cluster.Session.execute"
-_OPERATION_EXECUTE_ASYNC = "cassandra.cluster.Session.execute_async"
+_OPERATION_EXECUTE = "cassandra.cluster.Session.execute()"
+_OPERATION_EXECUTE_ASYNC = "cassandra.cluster.Session.execute_async()"
 
 # The driver implements ``Session.execute()`` as ``execute_async(...).result()``, so
 # without suppression every sync query emits two nested events with the same

@@ -50,6 +50,12 @@ _METHOD_STREAM = "/it.Echo/ServerStream"
 _METHOD_CLIENT_STREAM = "/it.Echo/ClientStream"
 _METHOD_BIDI = "/it.Echo/BidiStream"
 
+
+def _event(method: str) -> str:
+    # The client event is named in the Java agent's API descriptor form:
+    # "/it.Echo/Unary" -> "it.Echo.Unary()". The span's rpc keeps the path.
+    return method.lstrip("/").replace("/", ".") + "()"
+
 # host:port the module's channel dialled, filled in by the ``channel`` fixture.
 _DIALED: dict = {}
 
@@ -136,7 +142,7 @@ def test_unary_records_client_event_and_server_root_span(
     reply = channel.unary_unary(_METHOD_UNARY)(b"ping", timeout=10)
     assert reply == b"echo:ping"
 
-    ev = traced.single(_METHOD_UNARY, SERVICE_TYPE_GRPC)
+    ev = traced.single(_event(_METHOD_UNARY), SERVICE_TYPE_GRPC)
     assert ev.ended
     assert ev.service_type == SERVICE_TYPE_GRPC
     assert ev.destination == _target()
@@ -168,7 +174,7 @@ def test_server_streaming_client_event_is_dispatch_scoped(
     chunks = list(stream)
     assert chunks == [b"chunk-0", b"chunk-1", b"chunk-2"]
 
-    ev = traced.single(_METHOD_STREAM, SERVICE_TYPE_GRPC)
+    ev = traced.single(_event(_METHOD_STREAM), SERVICE_TYPE_GRPC)
     assert ev.ended
     assert ev.endpoint == _target()
     # The response may be iterated on another application thread. The client
@@ -187,7 +193,7 @@ def test_client_streaming_records_both_sides(
         iter((b"a", b"b", b"c")), timeout=10)
     assert reply == b"joined:a|b|c"
 
-    event = traced.single(_METHOD_CLIENT_STREAM, SERVICE_TYPE_GRPC)
+    event = traced.single(_event(_METHOD_CLIENT_STREAM), SERVICE_TYPE_GRPC)
     assert event.ended
     assert event.endpoint == _target()
     assert event.ann(ANNOTATION_GRPC_CLIENT_STATUS) == ["OK"]
@@ -207,7 +213,7 @@ def test_bidirectional_streaming_records_both_sides(
         iter((b"one", b"two")), timeout=10)
     assert list(stream) == [b"echo:one", b"echo:two"]
 
-    event = traced.single(_METHOD_BIDI, SERVICE_TYPE_GRPC)
+    event = traced.single(_event(_METHOD_BIDI), SERVICE_TYPE_GRPC)
     assert event.ended
     assert event.endpoint == _target()
     assert event.ann(ANNOTATION_GRPC_CLIENT_STATUS) == []
@@ -229,7 +235,7 @@ def test_bidirectional_stream_error_recorded_on_server_only(
         next(iterator)
     assert excinfo.value.code() == grpc.StatusCode.UNKNOWN
 
-    event = traced.single(_METHOD_BIDI, SERVICE_TYPE_GRPC)
+    event = traced.single(_event(_METHOD_BIDI), SERVICE_TYPE_GRPC)
     assert event.ended
     assert event.error is None
     assert event.ann(ANNOTATION_GRPC_CLIENT_STATUS) == []
@@ -246,7 +252,7 @@ def test_server_error_recorded_on_both_sides(channel, traced, consumer_agent):
         channel.unary_unary(_METHOD_UNARY)(b"boom", timeout=10)
     assert excinfo.value.code() == grpc.StatusCode.UNKNOWN
 
-    ev = traced.single(_METHOD_UNARY, SERVICE_TYPE_GRPC)
+    ev = traced.single(_event(_METHOD_UNARY), SERVICE_TYPE_GRPC)
     assert ev.ended
     assert ev.error is not None
     assert ev.ann(ANNOTATION_GRPC_CLIENT_STATUS) == ["UNKNOWN"]
@@ -266,7 +272,7 @@ def test_abort_is_control_flow_not_server_error(channel, traced,
         channel.unary_unary(_METHOD_UNARY)(b"abort", timeout=10)
     assert excinfo.value.code() == grpc.StatusCode.NOT_FOUND
 
-    ev = traced.single(_METHOD_UNARY, SERVICE_TYPE_GRPC)
+    ev = traced.single(_event(_METHOD_UNARY), SERVICE_TYPE_GRPC)
     assert ev.ended
     assert ev.ann(ANNOTATION_GRPC_CLIENT_STATUS) == ["NOT_FOUND"]
 
@@ -282,7 +288,7 @@ def test_no_current_span_passes_through(channel, recorder, consumer_agent):
     reply = channel.unary_unary(_METHOD_UNARY)(b"solo", timeout=10)
     assert reply == b"echo:solo"
 
-    assert recorder.events_named(_METHOD_UNARY, SERVICE_TYPE_GRPC) == []
+    assert recorder.events_named(_event(_METHOD_UNARY), SERVICE_TYPE_GRPC) == []
     # The server's own handler event is the only one recorded.
     assert [e.service_type for e in recorder.events] == [
         SERVICE_TYPE_PYTHON_METHOD]

@@ -65,7 +65,7 @@ from .._util import (
 
 _log = get_logger("wsgi")
 _DEFAULT_FRAMEWORK_NAME = "WSGI"
-_OPERATION_RESPONSE_STREAM = "wsgi.response.iteration"
+_OPERATION_RESPONSE_STREAM = "wsgi.response.iteration()"
 # Set on the per-request environ while a root span is open, so a nested Pinpoint
 # layer (a manually wrapped app whose framework autoload also instrumented) can't
 # open a second root span. Shares the ASGI middleware's scope key.
@@ -92,7 +92,7 @@ class PinpointWSGIMiddleware:
         # A bare app has no framework layer to name the handler that ran, so
         # its root span would report an empty call tree — name one event after
         # the application callable, resolved once rather than per request.
-        self._entry_event = callable_operation_name(app, default="wsgi.app")
+        self._entry_event = callable_operation_name(app, default="wsgi.app()")
 
     def __call__(self, environ: dict[str, Any],
                  start_response: StartResponse) -> Iterable[bytes]:

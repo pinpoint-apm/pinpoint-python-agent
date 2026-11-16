@@ -60,7 +60,7 @@ def test_async_wrapper_emits_event(sql_push_span, kind, sql_bind_values_on):
         wrapped, instance=_Connection(),
         args=("SELECT $1", 42), kwargs={},
     ))
-    operation = f"asyncpg.connection.Connection.{kind}"
+    operation = f"asyncpg.connection.Connection.{kind}()"
     assert ("event_start", "root", operation) in rec.events
     assert ("event_end", "root", operation) in rec.events
     sql_events = [e for e in rec.events if e[0] == "sql"]
@@ -172,7 +172,7 @@ def test_async_wrapper_suppressed_when_sqlalchemy_owns_statement(sql_push_span):
     assert out == "ok"
     starts = [e for e in rec.events if e[0] == "event_start"]
     assert len(starts) == 1
-    assert starts[0][2] == "asyncpg.connection.Connection.execute"
+    assert starts[0][2] == "asyncpg.connection.Connection.execute()"
 
 
 # ---------------------------------------------------------------------------
@@ -194,8 +194,8 @@ def test_cursor_factory_wrapper_is_synchronous(sql_push_span):
         args=("SELECT * FROM t",), kwargs={},
     )
     assert out == "factory-object"
-    assert ("event_start", "root", "asyncpg.connection.Connection.cursor") in rec.events
-    assert ("event_end", "root", "asyncpg.connection.Connection.cursor") in rec.events
+    assert ("event_start", "root", "asyncpg.connection.Connection.cursor()") in rec.events
+    assert ("event_end", "root", "asyncpg.connection.Connection.cursor()") in rec.events
 
 
 def test_cursor_factory_wrapper_suppressed_when_sqlalchemy_owns_statement(sql_push_span):
@@ -230,7 +230,7 @@ def test_cursor_factory_wrapper_suppressed_when_sqlalchemy_owns_statement(sql_pu
     assert out == "factory-object"
     starts = [e for e in rec.events if e[0] == "event_start"]
     assert len(starts) == 1
-    assert starts[0][2] == "asyncpg.connection.Connection.cursor"
+    assert starts[0][2] == "asyncpg.connection.Connection.cursor()"
 
 
 # ---------------------------------------------------------------------------

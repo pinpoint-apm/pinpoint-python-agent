@@ -399,7 +399,7 @@ def test_client_unary_unary_records_event_and_injects_metadata(fake_agent):
         continuation, _ccd(metadata=seeded), "REQ",
     )
     assert out == "RESP"
-    operation = "/svc/Method"
+    operation = "svc.Method()"
     assert ("event_start", "root", operation) in fake_agent.events
     assert ("event_end", "root", operation) in fake_agent.events
     # The wrapper hands a list to grpc (never a tuple/None) and preserves
@@ -449,7 +449,7 @@ def test_client_unary_unary_future_ends_event_at_dispatch(fake_agent):
     out = interceptor.intercept_unary_unary(lambda _d, _r: call, _ccd(), "REQ")
 
     assert out is call
-    operation = "/svc/Method"
+    operation = "svc.Method()"
     assert ("event_start", "root", operation) in fake_agent.events
     # Ended synchronously at dispatch, on the owning thread.
     assert ("event_end", "root", operation) in fake_agent.events
@@ -479,7 +479,7 @@ def test_client_stream_unary_future_ends_event_at_dispatch(fake_agent):
     )
 
     assert out is call
-    operation = "/svc/Method"
+    operation = "svc.Method()"
     assert ("event_end", "root", operation) in fake_agent.events
     assert call._callbacks == []
 
@@ -494,7 +494,7 @@ def test_client_unary_unary_already_done_call_ends_synchronously(fake_agent):
     out = interceptor.intercept_unary_unary(lambda _d, _r: call, _ccd(), "REQ")
 
     assert out is call
-    operation = "/svc/Method"
+    operation = "svc.Method()"
     assert ("event_end", "root", operation) in fake_agent.events
 
 
@@ -545,7 +545,7 @@ def test_client_unary_unary_blocking_rpc_error_marks_event_error(fake_agent):
     out = interceptor.intercept_unary_unary(lambda _d, _r: failed, _ccd(), "REQ")
 
     assert out is failed
-    operation = "/svc/Method"
+    operation = "svc.Method()"
     assert ("event_end", "root", operation) in fake_agent.events
     assert any(e[0] == "event_error" for e in fake_agent.events)
     ev = span._native.all_events[-1]
@@ -568,7 +568,7 @@ def test_client_unary_unary_future_termination_does_not_touch_event(fake_agent):
     out = interceptor.intercept_unary_unary(lambda _d, _r: call, _ccd(), "REQ")
 
     assert out is call
-    operation = "/svc/Method"
+    operation = "svc.Method()"
     assert ("event_end", "root", operation) in fake_agent.events
     assert call._callbacks == []
 
@@ -592,7 +592,7 @@ def test_client_unary_unary_blocking_success_is_not_marked_error(fake_agent):
     interceptor = _PinpointClientInterceptor()
     interceptor.intercept_unary_unary(lambda _d, _r: call, _ccd(), "REQ")
 
-    operation = "/svc/Method"
+    operation = "svc.Method()"
     assert ("event_end", "root", operation) in fake_agent.events
     assert not any(e[0] == "event_error" for e in fake_agent.events)
     ev = span._native.all_events[-1]
@@ -635,7 +635,7 @@ def test_client_stream_event_ends_at_dispatch_and_ignores_later_failure(fake_age
     resp = interceptor.intercept_unary_stream(
         lambda _d, _r: call, _ccd(), "REQ")
 
-    operation = "/svc/Method"
+    operation = "svc.Method()"
     assert ("event_end", "root", operation) in fake_agent.events
     iterator = iter(resp)
     assert next(iterator) == "r0"
@@ -704,7 +704,7 @@ def test_client_unary_stream_event_is_dispatch_scoped(fake_agent):
     resp = interceptor.intercept_unary_stream(continuation, _ccd(), "REQ")
 
     # The original response is returned and the parent event is already ended.
-    operation = "/svc/Method"
+    operation = "svc.Method()"
     assert ("event_start", "root", operation) in fake_agent.events
     assert ("event_end", "root", operation) in fake_agent.events
 
@@ -736,7 +736,7 @@ def test_client_unary_stream_iteration_error_does_not_reopen_dispatch_event(fake
     # retained and amended from the iterator's potentially different thread.
     event_log = fake_agent.events
     assert not any(e[0] == "event_error" for e in event_log)
-    assert ("event_end", "root", "/svc/Method") in event_log
+    assert ("event_end", "root", "svc.Method()") in event_log
 
 
 def test_client_stream_unary_ends_event_after_continuation(fake_agent):
@@ -749,7 +749,7 @@ def test_client_stream_unary_ends_event_after_continuation(fake_agent):
     interceptor = _PinpointClientInterceptor()
     out = interceptor.intercept_stream_unary(continuation, _ccd(), iter(["a"]))
     assert out == "RESP"
-    assert ("event_end", "root", "/svc/Method") in fake_agent.events
+    assert ("event_end", "root", "svc.Method()") in fake_agent.events
 
 
 def test_client_stream_stream_event_is_dispatch_scoped(fake_agent):
@@ -761,7 +761,7 @@ def test_client_stream_stream_event_is_dispatch_scoped(fake_agent):
     interceptor = _PinpointClientInterceptor()
     resp = interceptor.intercept_stream_stream(continuation, _ccd(), iter(["a"]))
 
-    operation = "/svc/Method"
+    operation = "svc.Method()"
     assert ("event_end", "root", operation) in fake_agent.events
     assert list(resp) == ["x", "y"]
 
@@ -821,7 +821,7 @@ def test_client_unary_stream_partial_consumption_retains_no_event(fake_agent):
 
     it = iter(resp)
     assert next(it) == "r0"  # partial consumption, then abandon
-    operation = "/svc/Method"
+    operation = "svc.Method()"
     assert ("event_end", "root", operation) in fake_agent.events
 
     # The instrumentation must not have hooked the done callback.
@@ -841,7 +841,7 @@ def test_client_unary_stream_abandonment_needs_no_gc_fallback(fake_agent):
         lambda d, r: iter(["r0", "r1"]), _ccd(), "REQ",
     )
     assert next(iter(resp)) == "r0"
-    operation = "/svc/Method"
+    operation = "svc.Method()"
     assert ("event_end", "root", operation) in fake_agent.events
 
     del resp
@@ -1149,7 +1149,7 @@ def test_client_streaming_response_forwards_isinstance(fake_agent):
     assert isinstance(resp, grpc.Future)
     # The event was already ended before the raw iterator was returned.
     assert list(resp) == ["r0", "r1"]
-    operation = "/svc/Method"
+    operation = "svc.Method()"
     assert ("event_end", "root", operation) in fake_agent.events
 
 
@@ -1179,7 +1179,7 @@ def test_client_streaming_response_propagates_rpc_error(fake_agent):
     assert next(it) == "r0"
     with pytest.raises(grpc.RpcError):
         next(it)
-    operation = "/svc/Method"
+    operation = "svc.Method()"
     assert ("event_end", "root", operation) in fake_agent.events
     assert not any(e[0] == "event_error" for e in fake_agent.events)
 

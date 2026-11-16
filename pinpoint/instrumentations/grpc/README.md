@@ -56,7 +56,7 @@ import grpc
 with grpc.insecure_channel("localhost:50051") as channel:
     stub = GreeterStub(channel)
     stub.SayHello(HelloRequest(name="pinpoint"))
-    # └─ span event: /helloworld.Greeter/SayHello   (Pinpoint metadata injected)
+    # └─ span event: helloworld.Greeter.SayHello()   (Pinpoint metadata injected)
 ```
 
 Channels and servers created *before* `autoload()` runs are not intercepted —

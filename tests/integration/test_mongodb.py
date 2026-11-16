@@ -60,7 +60,7 @@ def test_insert_and_find_record_events(client, mongo_container, traced,
     docs = list(coll.find({"name": "alice"}))
     assert len(docs) == 1
 
-    insert_ev = traced.single("mongo.insert")
+    insert_ev = traced.single("mongo.insert()")
     assert insert_ev.ended
     assert insert_ev.service_type == SERVICE_TYPE_MONGO
     assert insert_ev.destination == _DB
@@ -71,7 +71,7 @@ def test_insert_and_find_record_events(client, mongo_container, traced,
                  if a[1] == ANNOTATION_MONGO_JSON_DATA]
     assert json_anns and "insert" in json_anns[0][2]
 
-    find_ev = traced.single("mongo.find")
+    find_ev = traced.single("mongo.find()")
     assert find_ev.ended
     assert find_ev.ann(ANNOTATION_MONGO_COLLECTION_INFO) == [_COLLECTION]
 
@@ -81,7 +81,7 @@ def test_command_payload_not_captured_by_default(client, traced):
     and collection are recorded, but not the marshaled document payload."""
     client[_DB][_COLLECTION].insert_one({"secret": "sensitive-value"})
 
-    ev = traced.single("mongo.insert")
+    ev = traced.single("mongo.insert()")
     assert ev.ended
     assert ev.ann(ANNOTATION_MONGO_COLLECTION_INFO) == [_COLLECTION]
     assert [a for a in ev.annotations

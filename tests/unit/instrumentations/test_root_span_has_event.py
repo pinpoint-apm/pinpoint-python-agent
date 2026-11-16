@@ -72,7 +72,7 @@ def test_bare_wsgi_app_root_span_has_an_event(fake_agent):
 
     (op, events), = _events(fake_agent)
     assert op == "WSGI HTTP Server"
-    assert events == ["application"]
+    assert events == [f"{__name__}.application()"]
 
 
 def test_bare_asgi_app_root_span_has_an_event(fake_agent):
@@ -81,7 +81,7 @@ def test_bare_asgi_app_root_span_has_an_event(fake_agent):
 
     (op, events), = _events(fake_agent)
     assert op == "ASGI HTTP Server"
-    assert events == ["async_application"]
+    assert events == [f"{__name__}.async_application()"]
 
 
 def test_wsgi_entry_event_survives_an_app_that_raises(fake_agent):
@@ -93,7 +93,7 @@ def test_wsgi_entry_event_survives_an_app_that_raises(fake_agent):
                 lambda status, headers: None)
 
     (op, events), = _events(fake_agent)
-    assert events == ["failing_application"]
+    assert events == [f"{__name__}.failing_application()"]
     assert fake_agent.native_spans[0].end_called
 
 
@@ -122,7 +122,7 @@ def test_grpc_server_span_has_an_event(fake_agent):
 
     (op, events), = _events(fake_agent)
     assert op == "gRPC Server"
-    assert events == ["/svc/Method"]
+    assert events == ["svc.Method()"]
 
 
 def test_kafka_delivery_span_has_an_event(fake_agent):
@@ -134,7 +134,7 @@ def test_kafka_delivery_span_has_an_event(fake_agent):
 
     (op, events), = _events(fake_agent)
     assert op == "Kafka Consumer Invocation"
-    assert events == ["kafka.consume"]
+    assert events == ["kafka.consume()"]
 
 
 def test_framework_root_span_keeps_exactly_one_handler_event(fake_agent):
@@ -157,7 +157,7 @@ def test_framework_root_span_keeps_exactly_one_handler_event(fake_agent):
 
     (op, events), = _events(fake_agent)
     assert op == "Starlette HTTP Server"
-    assert events == ["endpoint"]
+    assert events == [f"{__name__}.endpoint()"]
 
 
 async def endpoint(request):

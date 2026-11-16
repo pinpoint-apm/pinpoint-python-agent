@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import functools
 
+from ..._api_name import api_descriptor
 from ..._log import get_logger
 from ...agent import get_agent
 from ...context import current_span, set_current_span
@@ -55,6 +56,17 @@ from .._util import (
 
 _log = get_logger("tornado")
 _OPERATION_SERVER = "Tornado HTTP Server"
+
+
+# Handler classes live as long as the app, so the name is built once per
+# (class, method) rather than per request. Bounded: the method is the client's
+# request line, and Tornado only rejects an unsupported one inside _execute.
+@functools.lru_cache(maxsize=256)
+def _handler_event_name(handler_cls: type, method: str) -> str:
+    # Java agent API descriptor form, so Pinpoint Web shows the handler class
+    # in the call tree's Class column.
+    return api_descriptor(handler_cls.__module__, handler_cls.__qualname__,
+                          method.lower())
 # Stamped on the per-request RequestHandler while our root span is open, so a
 # stacked wrapper re-entering ``_execute`` for the *same* handler passes through.
 # Keyed on the handler, not ``current_span()``, so an ambient/leaked context span
@@ -141,9 +153,10 @@ async def _execute_wrapper(wrapped, instance, args, kwargs):
         _mark_root_span_active(instance)
         token = set_current_span(span)
 
-        # A Python-method event named after handler class+method (UserHandler.get)
-        # so the UI shows what code ran, lasting the whole dispatch either way.
-        op_name = f"{type(instance).__name__}.{method.lower()}" if sampled else ""
+        # A Python-method event named after the handler method Tornado
+        # dispatches to (myapp.handlers.UserHandler.get()) so the UI shows what
+        # code ran, lasting the whole dispatch either way.
+        op_name = _handler_event_name(type(instance), method) if sampled else ""
         event = span.new_span_event(op_name, service_type=SERVICE_TYPE_PYTHON_METHOD)
     except Exception:  # noqa: BLE001
         _log.debug("tornado span setup failed", exc_info=True)

@@ -58,7 +58,7 @@ from .._util import (
 )
 
 _log = get_logger("aio_pika")
-_OPERATION_EXCHANGE_PUBLISH = "aio_pika.exchange.Exchange.publish"
+_OPERATION_EXCHANGE_PUBLISH = "aio_pika.exchange.Exchange.publish()"
 
 
 class AioPikaInstrumentor(BaseInstrumentor):
@@ -256,7 +256,7 @@ def _wrap_consumer_callback(callback, queue):
         # without running the handler. A None scope runs it untraced instead.
         scope = open_consumer_scope(
             agent, message, message, queue, _connection_endpoint,
-            "aio_pika.consume", held=True)
+            "aio_pika.consume()", held=True)
         if scope is None:
             return await _invoke_handler(callback, message)
         try:

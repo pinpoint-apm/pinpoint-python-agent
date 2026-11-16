@@ -88,10 +88,10 @@ def test_started_then_succeeded_opens_and_closes_event(push_span):
     assert key in pymongo_instr._inflight
     # The event is Python-buffered while open; it reaches the fake native
     # only once it ends.
-    assert ("event_start", "root", "mongo.find") not in rec.events
+    assert ("event_start", "root", "mongo.find()") not in rec.events
     pymongo_instr._on_succeeded(_SucceededEvent())
-    assert ("event_start", "root", "mongo.find") in rec.events
-    assert ("event_end", "root", "mongo.find") in rec.events
+    assert ("event_start", "root", "mongo.find()") in rec.events
+    assert ("event_end", "root", "mongo.find()") in rec.events
     assert key not in pymongo_instr._inflight
 
 
@@ -105,7 +105,7 @@ def test_started_then_failed_with_exception_records_error(push_span):
     err = RuntimeError("kaput")
     pymongo_instr._on_failed(_FailedEvent(failure=err))
     assert any(e[0] == "event_error" for e in rec.events)
-    assert ("event_end", "root", "mongo.find") in rec.events
+    assert ("event_end", "root", "mongo.find()") in rec.events
 
 
 def test_started_then_failed_with_dict_records_string_error(push_span):

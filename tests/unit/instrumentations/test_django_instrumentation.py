@@ -347,7 +347,7 @@ def test_asgi_process_request_task_keeps_view_on_request_root(fake_agent):
     # The view event replays to the ROOT span's native at its end (already
     # renamed from the placeholder) — not to an async child.
     assert (
-        "event_start", "Django HTTP Server", "_sample_view",
+        "event_start", "Django HTTP Server", _SAMPLE_VIEW_EVENT,
     ) in fake_agent.events
 
 
@@ -412,12 +412,16 @@ def _sample_view(request):  # module-level so __qualname__ is a clean name
     return _FakeResponse(200)
 
 
+# Java agent API descriptor form: module.qualname().
+_SAMPLE_VIEW_EVENT = f"{__name__}._sample_view()"
+
+
 def test_handler_wrapper_renames_view_event_and_stashes_url_pattern(fake_agent):
     """``_handler_wrapper`` opens the view span event under a placeholder
-    (``django.request``) and renames it from ``request.resolver_match`` just
+    (the wrapped ``BaseHandler._get_response()``) and renames it from ``request.resolver_match`` just
     before it ends; it also stashes the matched route template for url-stat
     bucketing. Nothing covered this — the fake span had no span-event support,
-    so a regression collapsing every view to ``django.request`` (or losing the
+    so a regression collapsing every view to the placeholder (or losing the
     per-route url_stat) would go unnoticed."""
     from pinpoint import context as ppctx
     from pinpoint.instrumentations import django as django_instr
@@ -445,7 +449,7 @@ def test_handler_wrapper_renames_view_event_and_stashes_url_pattern(fake_agent):
         not in fake_agent.events
     ev = native.all_events[-1]
     assert ev.op != django_instr._OPERATION_VIEW_FALLBACK
-    assert ev.op.endswith("_sample_view")
+    assert ev.op == _SAMPLE_VIEW_EVENT
     # The matched route template is stashed for url-stat bucketing.
     assert request.META["pinpoint.url_pattern"] == "items/<int:pk>/"
 
@@ -473,11 +477,11 @@ def test_async_handler_wrapper_traces_view_and_stashes_scope(fake_agent):
 
     assert response.status_code == 200
     event = fake_agent.last_native.all_events[-1]
-    assert event.operation_name.endswith("_sample_view")
+    assert event.operation_name == _SAMPLE_VIEW_EVENT
     assert request.scope["pinpoint.url_pattern"] == "items/<int:pk>/"
     # The event replays to native at its end, already renamed.
     ends = [e for e in fake_agent.events if e[0] == "event_end"]
-    assert ends and ends[-1][2].endswith("_sample_view")
+    assert ends and ends[-1][2] == _SAMPLE_VIEW_EVENT
 
 
 def test_handler_wrapper_keeps_placeholder_when_no_resolver_match(fake_agent):

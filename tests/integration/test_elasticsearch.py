@@ -34,10 +34,10 @@ from pinpoint.annotation import (
 )
 from pinpoint.service_type import SERVICE_TYPE_ELASTICSEARCH
 
-_OP = "elastic_transport.Transport.perform_request"
-_OP_ASYNC = "elastic_transport.AsyncTransport.perform_request"
-_OP_URLLIB3 = "urllib3.connectionpool.HTTPConnectionPool.urlopen"
-_OP_AIOHTTP = "aiohttp.client.ClientSession._request"
+_OP = "elastic_transport.Transport.perform_request()"
+_OP_ASYNC = "elastic_transport.AsyncTransport.perform_request()"
+_OP_URLLIB3 = "urllib3.connectionpool.HTTPConnectionPool.urlopen()"
+_OP_AIOHTTP = "aiohttp.client.ClientSession._request()"
 
 
 @pytest.fixture(scope="module", autouse=True)

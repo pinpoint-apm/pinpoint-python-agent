@@ -35,7 +35,7 @@ from .._util import span_is_sampled, sql_bind_values_enabled
 from ..dbapi import _format_params, enter_sqlalchemy_execute, exit_sqlalchemy_execute
 
 _log = get_logger("sqlalchemy")
-_OPERATION_CURSOR_EXECUTE = "sqlalchemy.engine.Engine.before_cursor_execute"
+_OPERATION_CURSOR_EXECUTE = "sqlalchemy.engine.Engine.before_cursor_execute()"
 
 _DIALECT_TO_TYPE = {
     "mysql": SERVICE_TYPE_MYSQL,

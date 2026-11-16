@@ -43,8 +43,8 @@ from .._util import (
 )
 
 _log = get_logger("httpx")
-_OPERATION_CLIENT_SEND = "httpx.Client.send"
-_OPERATION_ASYNC_CLIENT_SEND = "httpx.AsyncClient.send"
+_OPERATION_CLIENT_SEND = "httpx.Client.send()"
+_OPERATION_ASYNC_CLIENT_SEND = "httpx.AsyncClient.send()"
 
 
 class HttpxInstrumentor(BaseInstrumentor):

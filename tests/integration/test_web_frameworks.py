@@ -130,7 +130,7 @@ def test_flask_stream_uses_response_child_for_body_consumption(
     response = flask_app.test_client().get("/stream", buffered=False)
     root = _single_span_named(recording_agent, "Flask HTTP Server")
     response_span = _single_span_named(
-        recording_agent, "wsgi.response.iteration",
+        recording_agent, "wsgi.response.iteration()",
     )
 
     assert root.ended
@@ -384,7 +384,7 @@ def test_django_stream_uses_response_child_for_body_consumption(
     body_iter = django_app(environ, start_response)
     root = _single_span_named(recording_agent, "Django HTTP Server")
     response_span = _single_span_named(
-        recording_agent, "wsgi.response.iteration",
+        recording_agent, "wsgi.response.iteration()",
     )
     assert root.ended
     assert not response_span.ended
@@ -602,16 +602,16 @@ def test_fastapi_generator_dependency_teardown_gets_worker_handoff(
     # Dependency setup (cm.__enter__) rides FastAPI's wrapped
     # run_in_threadpool alias and gets the generic threadpool child.
     enter_spans = [s for s in recording_agent.spans
-                   if s.operation == "starlette.threadpool"]
+                   if s.operation == "starlette.concurrency.run_in_threadpool()"]
     assert enter_spans and all(s.ended for s in enter_spans)
 
     # Teardown (cm.__exit__) bypasses that alias, so it must receive its own
     # explicit hand-off: a link event on the root plus an async child span.
-    link_events = recording_agent.events_named("fastapi.contextmanager.exit")
+    link_events = recording_agent.events_named("fastapi.concurrency.contextmanager_in_threadpool()")
     assert len(link_events) == 1 and link_events[0].ended
     assert link_events[0].span.record is root
     exit_span = _single_span_named(
-        recording_agent, "fastapi.contextmanager.exit")
+        recording_agent, "fastapi.concurrency.contextmanager_in_threadpool()")
     assert exit_span.ended
 
     # The teardown body ran on a worker thread with the hand-off child
@@ -638,7 +638,7 @@ def test_fastapi_generator_dependency_teardown_handoff_when_endpoint_raises(
     assert root.status_code == 500 and root.ended
     assert root.error is not None and root.error[0] == "RuntimeError"
     exit_span = _single_span_named(
-        recording_agent, "fastapi.contextmanager.exit")
+        recording_agent, "fastapi.concurrency.contextmanager_in_threadpool()")
     assert exit_span.ended
     teardown_events = recording_agent.events_named("dependency.teardown")
     assert len(teardown_events) == 1 and teardown_events[0].ended
@@ -719,7 +719,7 @@ def test_tornado_real_request_records_span_and_handler_event(
     assert span.url_pattern == "/items/42"
     assert span.method == "GET"
     assert span.status_code == 200 and span.ended
-    events = recording_agent.events_named("ItemHandler.get")
+    events = recording_agent.events_named(f"{__name__}.tornado_app.ItemHandler.get()")
     assert len(events) == 1 and events[0].ended
     assert events[0].error is None
 
@@ -732,7 +732,7 @@ def test_tornado_http_error_is_control_flow_not_span_error(
     span = recording_agent.spans[-1]
     assert span.status_code == 404 and span.ended
     assert span.error is None
-    events = recording_agent.events_named("MissingHandler.get")
+    events = recording_agent.events_named(f"{__name__}.tornado_app.MissingHandler.get()")
     assert len(events) == 1 and events[0].ended
     assert events[0].error is None
 
@@ -749,7 +749,7 @@ def test_tornado_unhandled_exception_records_span_error(
     # Tornado consumes the handler exception inside ``_execute`` (it routes it
     # through ``log_exception`` and serves the 500 itself), so the error lands
     # on the span via the log_exception hook — the handler event just ends.
-    events = recording_agent.events_named("BoomHandler.get")
+    events = recording_agent.events_named(f"{__name__}.tornado_app.BoomHandler.get()")
     assert len(events) == 1 and events[0].ended
 
 

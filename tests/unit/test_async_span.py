@@ -246,15 +246,15 @@ def test_plain_asyncio_tasks_get_independent_native_event_stacks():
     task_event_ends = [
         event[2]
         for event in rec.events
-        if event[0] == "event_end" and event[1] == "async:asyncio.task"
+        if event[0] == "event_end" and event[1] == "async:asyncio.task()"
     ]
     assert task_event_ends == ["first", "second"]
     assert [
         event for event in rec.events
-        if event == ("span_end", "async:asyncio.task")
+        if event == ("span_end", "async:asyncio.task()")
     ] == [
-        ("span_end", "async:asyncio.task"),
-        ("span_end", "async:asyncio.task"),
+        ("span_end", "async:asyncio.task()"),
+        ("span_end", "async:asyncio.task()"),
     ]
 
 
@@ -303,7 +303,7 @@ def test_implicit_asyncio_task_span_times_out_while_task_keeps_running():
             await started.wait()
             await asyncio.sleep(0.01)
             assert rec.events.count(
-                ("span_end", "async:asyncio.task")) == 1
+                ("span_end", "async:asyncio.task()")) == 1
 
             resume.set()
             await asyncio.sleep(0)
@@ -319,7 +319,7 @@ def test_implicit_asyncio_task_span_times_out_while_task_keeps_running():
 
     asyncio.run(main())
     # The eventual done callback is a no-op after timeout finalization.
-    assert rec.events.count(("span_end", "async:asyncio.task")) == 1
+    assert rec.events.count(("span_end", "async:asyncio.task()")) == 1
 
 
 def test_implicit_task_timeout_waits_for_suspended_span_event():
@@ -343,12 +343,12 @@ def test_implicit_task_timeout_waits_for_suspended_span_event():
         try:
             await event_started.wait()
             await asyncio.sleep(0.01)
-            assert ("span_end", "async:asyncio.task") not in rec.events
+            assert ("span_end", "async:asyncio.task()") not in rec.events
 
             resume.set()
             await asyncio.sleep(0.01)
             assert rec.events.count(
-                ("span_end", "async:asyncio.task")) == 1
+                ("span_end", "async:asyncio.task()")) == 1
         finally:
             task.cancel()
             try:
@@ -430,7 +430,7 @@ def test_implicit_task_timeout_force_ends_leaked_span_event_after_grace(monkeypa
             await leaked.wait()
             # timeout (1ms) + grace (max(1ms, 0)) both elapse well within this.
             await asyncio.sleep(0.05)
-            assert rec.events.count(("span_end", "async:asyncio.task")) == 1
+            assert rec.events.count(("span_end", "async:asyncio.task()")) == 1
         finally:
             task.cancel()
             try:

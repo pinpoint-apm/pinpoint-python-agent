@@ -146,6 +146,10 @@ def helper():
     ...
 ```
 
+Without a name, the event is named `module.qualname()` — `billing.helper()`
+for the `helper` above if it lives in `billing.py` — the form described in
+[§6](#naming-span-events). An explicit name is used as given.
+
 ### `pinpoint.trace(...)` — context-manager equivalent
 
 ```python
@@ -259,7 +263,7 @@ trace_http_server_response(
 # outbound (span event). The helper stamps SERVICE_TYPE_PYTHON_HTTP_CLIENT
 # (9900) on the event itself; pass it to new_span_event too, so an unsampled
 # transaction — which skips the helper — still names the event correctly.
-event = span.new_span_event("requests.sessions.Session.send",
+event = span.new_span_event("requests.sessions.Session.send()",
                             service_type=SERVICE_TYPE_PYTHON_HTTP_CLIENT)
 trace_http_client_request(
     event, host, url, request.headers,
@@ -304,7 +308,7 @@ query, a cache lookup, a business-logic block.
 and ends it on exit:
 
 ```python
-with span.new_span_event("redis.client.Redis.execute_command", service_type=SERVICE_TYPE_REDIS) as event:
+with span.new_span_event("redis.client.Redis.execute_command()", service_type=SERVICE_TYPE_REDIS) as event:
     event.set_end_point("redis.internal:6379")
     event.set_destination("session-cache")
     return client.get(key)
@@ -312,6 +316,32 @@ with span.new_span_event("redis.client.Redis.execute_command", service_type=SERV
 
 Where an event's scope does not match a block, pair `new_span_event()` with
 `event.end()` in a `finally` by hand, under the pairing rules below.
+
+### <a id="naming-span-events"></a>Naming span events
+
+Pinpoint Web splits a span event's name into the call tree's **Class** and
+**Method** columns only when it has the Java agent's API-descriptor shape,
+`<qualified class>.<method>(<params>)`: everything up to the last `.` before
+the `(` is the class, whose last segment fills the Class column. A name
+without parentheses is shown whole in the Method column, with the Class column
+empty.
+
+Every bundled instrumentation names its events that way, with an empty
+parameter list — what the Java agent sends when it has no parameter
+information:
+
+| Event | Name | Class | Method |
+|---|---|---|---|
+| Library call | `redis.client.Redis.execute_command()` | `Redis` | `execute_command()` |
+| Handler method | `myapp.views.UserView.get()` | `UserView` | `get()` |
+| Module function | `myapp.views.index()` | `views` | `index()` |
+| gRPC method | `helloworld.Greeter.SayHello()` | `Greeter` | `SayHello()` |
+
+A function defined inside another one is named after its enclosing scope
+(`create_app.<locals>.index` becomes `myapp.create_app.index()`), and a Django
+class-based view after its class, `myapp.views.UserView.dispatch()`. Names you
+pass to `new_span_event()` / `trace()` / `@spanevent("…")` are sent as given;
+follow the same form to get the class column filled.
 
 ### Nesting
 
@@ -522,7 +552,7 @@ def _send_wrapper(wrapped, instance, args, kwargs):
 
     request = args[0]
     event = span.new_span_event(
-        "requests.sessions.Session.send",
+        "requests.sessions.Session.send()",
         service_type=SERVICE_TYPE_PYTHON_HTTP_CLIENT,
     )
     event.set_end_point(host).set_destination(host)
@@ -573,7 +603,7 @@ def _instrument():
 ```
 
 That one call wraps `execute`, `executemany`, and `callproc`, opens a span event
-named after the wrapped cursor API (`pymysql.cursors.Cursor.execute`), extracts
+named after the wrapped cursor API (`pymysql.cursors.Cursor.execute()`), extracts
 the connection's `host`/`port`/`database` for `end_point` and `destination`, and
 records the SQL via `event.set_sql_query(sql, params)`. Bound values are omitted
 by default because they can contain credentials or PII. With
@@ -634,7 +664,7 @@ only the carrier differs:
 
 ```python
 event = span.new_span_event(
-    "kafka.producer.kafka.KafkaProducer.send",
+    "kafka.producer.kafka.KafkaProducer.send()",
     service_type=SERVICE_TYPE_KAFKA_CLIENT,
 )
 event.set_destination(brokers).set_end_point(brokers)

@@ -185,8 +185,8 @@ def test_wrap_cursor_class_installs_hooks_on_module(sql_push_span, monkeypatch):
     sp, rec = sql_push_span
     out = cursor.execute("SELECT 1")
     assert out == "executed:SELECT 1"
-    assert ("event_start", "root", "fake_dbapi_drv.Cursor.execute") in rec.events
-    assert ("event_end", "root", "fake_dbapi_drv.Cursor.execute") in rec.events
+    assert ("event_start", "root", "fake_dbapi_drv.Cursor.execute()") in rec.events
+    assert ("event_end", "root", "fake_dbapi_drv.Cursor.execute()") in rec.events
 
 
 def test_wrap_cursor_class_is_idempotent_across_reinstrument(sql_push_span, monkeypatch):
@@ -220,7 +220,7 @@ def test_wrap_cursor_class_is_idempotent_across_reinstrument(sql_push_span, monk
     cursor.execute("SELECT 1")
     starts = [e for e in rec.events if e[0] == "event_start"]
     assert len(starts) == 1, f"expected 1 DB event after re-instrument, got {len(starts)}"
-    assert starts[0][2] == "fake_dbapi_reinstr.Cursor.execute"
+    assert starts[0][2] == "fake_dbapi_reinstr.Cursor.execute()"
 
 
 # ---------------------------------------------------------------------------
@@ -397,7 +397,7 @@ def test_callproc_suppresses_inner_execute_event(sql_push_span, monkeypatch):
     cursor.callproc("do_thing", [1])
     starts = [e for e in rec.events if e[0] == "event_start"]
     assert len(starts) == 1, f"expected 1 event for callproc, got {starts}"
-    assert starts[0][2] == "fake_callproc_drv.Cursor.callproc"
+    assert starts[0][2] == "fake_callproc_drv.Cursor.callproc()"
 
 
 def test_executemany_renders_first_row_with_count_marker(sql_push_span, sql_bind_values_on):
@@ -458,12 +458,12 @@ def test_executemany_loop_produces_single_event(sql_push_span, monkeypatch):
 
     starts = [e for e in rec.events if e[0] == "event_start"]
     assert len(starts) == 1, f"expected 1 DB event, got {len(starts)}"
-    assert starts[0][2] == "fake_dbapi_many.Cursor.executemany"
+    assert starts[0][2] == "fake_dbapi_many.Cursor.executemany()"
     # Suppression is reset in finally — a subsequent execute traces normally.
     cursor.execute("SELECT 1")
     starts = [e for e in rec.events if e[0] == "event_start"]
     assert len(starts) == 2
-    assert starts[1][2] == "fake_dbapi_many.Cursor.execute"
+    assert starts[1][2] == "fake_dbapi_many.Cursor.execute()"
 
 
 def test_in_executemany_flag_reset_after_exception(sql_push_span, monkeypatch):
@@ -498,7 +498,7 @@ def test_in_executemany_flag_reset_after_exception(sql_push_span, monkeypatch):
     assert dbapi_instr._in_executemany.get() is False
     cursor.execute("SELECT 1")
     assert any(
-        e[0] == "event_start" and e[2].endswith("Cursor.execute")
+        e[0] == "event_start" and e[2].endswith("Cursor.execute()")
         for e in rec.events
     )
 
@@ -546,12 +546,12 @@ def test_async_executemany_loop_produces_single_event(sql_push_span, monkeypatch
 
     starts = [e for e in rec.events if e[0] == "event_start"]
     assert len(starts) == 1, f"expected 1 DB event, got {len(starts)}"
-    assert starts[0][2] == "fake_dbapi_async_many.Cursor.executemany"
+    assert starts[0][2] == "fake_dbapi_async_many.Cursor.executemany()"
     # Suppression is reset in ``finally`` — a later execute traces normally.
     asyncio.run(cursor.execute("SELECT 1"))
     starts = [e for e in rec.events if e[0] == "event_start"]
     assert len(starts) == 2
-    assert starts[1][2] == "fake_dbapi_async_many.Cursor.execute"
+    assert starts[1][2] == "fake_dbapi_async_many.Cursor.execute()"
 
 
 # ---------------------------------------------------------------------------

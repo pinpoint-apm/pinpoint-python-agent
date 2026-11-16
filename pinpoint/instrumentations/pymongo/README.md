@@ -16,8 +16,8 @@ versions — the same approach as
 
 ## What gets traced
 
-- One span event per command, named `mongo.<command>` — `mongo.find`,
-  `mongo.insert`, `mongo.aggregate`, `mongo.update`, and so on, including
+- One span event per command, named `mongo.<command>()` — `mongo.find()`,
+  `mongo.insert()`, `mongo.aggregate()`, `mongo.update()`, and so on, including
   internal commands such as `hello`.
 - The collection name and collection options are annotated.
 - The **command document** (the query/filter/pipeline itself) is recorded as JSON
@@ -47,7 +47,7 @@ from pymongo import MongoClient
 
 client = MongoClient("mongodb://mongo.internal:27017")
 client.shop.users.find_one({"_id": uid})
-# └─ span event: MONGO  mongo.find   (collection "users")
+# └─ span event: MONGO  mongo.find()   (collection "users")
 ```
 
 To see the filter document in the UI, enable bind values — note the privacy

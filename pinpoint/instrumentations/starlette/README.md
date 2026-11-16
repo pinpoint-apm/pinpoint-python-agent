@@ -43,7 +43,7 @@ from starlette.routing import Route
 
 async def user_detail(request):
     # Root span   : Starlette HTTP Server  (GET /users/{uid})
-    #  └─ event   : user_detail
+    #  └─ event   : app.user_detail()
     #      └─ event: GET http://profile.internal/...   <- httpx, headers injected
     async with httpx.AsyncClient() as client:
         await client.get("http://profile.internal/profiles/1")

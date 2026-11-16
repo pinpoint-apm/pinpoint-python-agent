@@ -43,7 +43,7 @@ import falcon
 class UserResource:
     def on_get(self, req, resp, uid):
         # Root span   : Falcon HTTP Server  (GET /users/{uid})
-        #  └─ event   : UserResource.on_get
+        #  └─ event   : app.UserResource.on_get()
         resp.media = {"id": uid}
 
 app = falcon.App()

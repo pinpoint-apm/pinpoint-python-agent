@@ -64,7 +64,7 @@ class AsyncpgInstrumentor(BaseInstrumentor):
 def _make_wrapper(kind: str):
     # The operation string is fixed per wrapper; building it per query would
     # be a per-call f-string for a constant.
-    operation = f"{_OPERATION_PREFIX}.{kind}"
+    operation = f"{_OPERATION_PREFIX}.{kind}()"
     if kind == "cursor":
         # Connection.cursor is a sync factory returning a CursorFactory;
         # the actual server-side iteration happens inside the user's loop.

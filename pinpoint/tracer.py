@@ -1156,7 +1156,7 @@ class Span(_Annotatable):
         if not callable(getattr(self._native, "new_async_span", None)):
             return self
 
-        operation = "asyncio.task"
+        operation = "asyncio.task()"
         async_span: Span | None = None
         timeout_handle: Any = None
         try:

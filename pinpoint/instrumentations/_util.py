@@ -50,6 +50,7 @@ import wrapt  # type: ignore[import-not-found]
 
 from .. import http_helper as _http_helper
 from .. import _log as _log_module
+from .._api_name import callable_api_name
 from .._log import get_logger
 from ..agent import get_agent
 from ..context import current_span, reset_current_span
@@ -1001,27 +1002,12 @@ def http_exception_status(exc, names, *, module_prefix=None,
 
 
 def callable_operation_name(fn, default=""):
-    """User-meaningful span-event name for a handler callable.
-
-    Strips ``functools.partial`` layers and wrapt/``functools.wraps`` wrappers
-    so the user's source-level name surfaces rather than
-    ``decorator.<locals>._wrapper``, then takes ``__qualname__`` (or
-    ``__name__``). A callable *object* has no name of its own, so it is named
-    after its class. Returns ``default`` for ``None`` or when nothing
-    resolves."""
-    if fn is None:
-        return default
-    while isinstance(fn, functools.partial):
-        fn = fn.func
-    unwrapped = getattr(fn, "__wrapped__", fn)
-    name = (getattr(unwrapped, "__qualname__", None)
-            or getattr(unwrapped, "__name__", None))
-    if name:
-        return name
-    cls = type(unwrapped)
-    return (getattr(cls, "__qualname__", None)
-            or getattr(cls, "__name__", None)
-            or default)
+    """Span-event name for a handler callable, as the Java agent would name
+    it: ``module.qualname()`` (``myapp.views.UserView.get()``), so Pinpoint
+    Web shows the class in the call tree's Class column. See
+    :func:`pinpoint._api_name.callable_api_name` for the exact rules. Returns
+    ``default`` for ``None`` or when nothing resolves."""
+    return callable_api_name(fn, default)
 
 
 # callable_operation_name memoized: view/route handlers are fixed at

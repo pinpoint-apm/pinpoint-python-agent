@@ -50,7 +50,7 @@ from .._kafka import (
 )
 from .._util import no_current_span, span_event_scope, wrap
 
-_OPERATION_PRODUCER_SEND = "kafka.producer.kafka.KafkaProducer.send"
+_OPERATION_PRODUCER_SEND = "kafka.producer.kafka.KafkaProducer.send()"
 
 
 class KafkaInstrumentor(BaseInstrumentor):

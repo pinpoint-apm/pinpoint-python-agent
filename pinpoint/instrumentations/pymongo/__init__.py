@@ -155,7 +155,7 @@ def _on_started(event) -> None:
     if not span_is_sampled(span):
         return
     command_name = getattr(event, "command_name", "command") or "command"
-    op_name = f"mongo.{command_name}"
+    op_name = f"mongo.{command_name}()"
     span_event = span.new_span_event(op_name, service_type=SERVICE_TYPE_MONGO)
     _annotate_started(span_event, event)
     key = _event_key(event)

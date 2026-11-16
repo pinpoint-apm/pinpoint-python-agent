@@ -33,7 +33,7 @@ pika = pytest.importorskip("pika")
 from pinpoint.annotation import ANNOTATION_RABBITMQ_ROUTINGKEY
 from pinpoint.service_type import SERVICE_TYPE_RABBITMQ_CLIENT
 
-_OP_PUBLISH = "pika.channel.Channel.basic_publish"
+_OP_PUBLISH = "pika.channel.Channel.basic_publish()"
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -141,7 +141,7 @@ def test_aio_pika_publish_and_consume(rabbitmq_container, traced,
     assert seen["body"] == b"hello"
     assert seen["span"] is not None
 
-    publish_ev = traced.single("aio_pika.exchange.Exchange.publish")
+    publish_ev = traced.single("aio_pika.exchange.Exchange.publish()")
     assert publish_ev.ended
     assert publish_ev.service_type == SERVICE_TYPE_RABBITMQ_CLIENT
     assert publish_ev.destination == "exchange-Unknown"
@@ -155,5 +155,5 @@ def test_aio_pika_publish_and_consume(rabbitmq_container, traced,
     assert root.headers is not None
     assert root.headers.get("Pinpoint-TraceID") == producer_span.trace_id
 
-    consume_events = traced.events_named("aio_pika.consume")
+    consume_events = traced.events_named("aio_pika.consume()")
     assert len(consume_events) == 1 and consume_events[0].ended

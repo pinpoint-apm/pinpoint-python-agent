@@ -64,7 +64,7 @@ def test_entry_event_false_falls_back_when_nothing_was_recorded(fake_agent):
     asyncio.run(mw(_http_scope(), receive, lambda _m: _noop()))
 
     assert [e.op for e in fake_agent.last_native.all_events] == [
-        "starlette.no_route"]
+        "starlette.no_route()"]
     assert fake_agent.last_native.status_code == 404
 
 

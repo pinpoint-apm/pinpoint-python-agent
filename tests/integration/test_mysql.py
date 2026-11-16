@@ -26,9 +26,9 @@ pymysql = pytest.importorskip("pymysql")
 
 from pinpoint.service_type import SERVICE_TYPE_MYSQL
 
-_OP_PYMYSQL_EXECUTE = "pymysql.cursors.Cursor.execute"
-_OP_PYMYSQL_EXECUTEMANY = "pymysql.cursors.Cursor.executemany"
-_OP_SQLALCHEMY = "sqlalchemy.engine.Engine.before_cursor_execute"
+_OP_PYMYSQL_EXECUTE = "pymysql.cursors.Cursor.execute()"
+_OP_PYMYSQL_EXECUTEMANY = "pymysql.cursors.Cursor.executemany()"
+_OP_SQLALCHEMY = "sqlalchemy.engine.Engine.before_cursor_execute()"
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -142,7 +142,7 @@ def test_mysql_connector_execute(mysql_container, traced):
     # mysql-connector issues internal statements (e.g. SELECT @@session.sql_mode)
     # through the same cursor class — pick the test's own statement.
     events = [e for e in traced.events_named(
-        "mysql.connector.cursor.MySQLCursor.execute")
+        "mysql.connector.cursor.MySQLCursor.execute()")
         if e.sql and "%s + %s" in e.sql[0][0]]
     assert len(events) == 1
     ev = events[0]
@@ -180,7 +180,7 @@ def test_mysql_connector_tracks_runtime_use_schema(mysql_container, traced):
     finally:
         c.close()
 
-    operation = "mysql.connector.cursor.MySQLCursor.execute"
+    operation = "mysql.connector.cursor.MySQLCursor.execute()"
     selects = [
         event for event in traced.events_named(operation)
         if event.sql == [("SELECT DATABASE()", "")]
@@ -215,7 +215,7 @@ def test_aiomysql_async_execute(mysql_container, traced, sql_bind_values_on):
 
     assert asyncio.run(main()) == (42,)
 
-    ev = traced.single("aiomysql.cursors.Cursor.execute")
+    ev = traced.single("aiomysql.cursors.Cursor.execute()")
     assert ev.ended
     assert ev.service_type == SERVICE_TYPE_MYSQL
     assert ev.destination == mysql_container["database"]

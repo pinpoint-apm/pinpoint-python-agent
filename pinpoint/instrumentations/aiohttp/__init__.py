@@ -78,7 +78,7 @@ from .._util import (
 
 _log = get_logger("aiohttp")
 _OPERATION_SERVER = "aiohttp HTTP Server"
-_OPERATION_CLIENT_REQUEST = "aiohttp.client.ClientSession._request"
+_OPERATION_CLIENT_REQUEST = "aiohttp.client.ClientSession._request()"
 # Stamped on the per-request Request while our root span is open, so a stacked
 # wrapper re-entering ``_handle_request`` for the *same* request passes through.
 # Keyed on the Request, not ``current_span()``, so an ambient/leaked context span

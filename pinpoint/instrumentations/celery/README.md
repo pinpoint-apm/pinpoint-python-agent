@@ -19,7 +19,7 @@ HTTP and nested `apply_async` calls stitch onto it.
 `celery.app.task.Task.apply_async` is the one wrap — `delay()`, signatures,
 chains and `task.retry()` all funnel into it. Per call it:
 
-- opens a span event named `celery.app.task.Task.apply_async`, service type
+- opens a span event named `celery.app.task.Task.apply_async()`, service type
   `CELERY`, with the broker `host:port` as end point;
 - from the `before_task_publish` signal, sets the **resolved** routing key
   (what `task_routes` / `queue=` actually chose) as the event's destination and
@@ -52,7 +52,7 @@ failure, `Retry`, `Ignore` and `Reject` alike. The span records:
 | Acceptor host | the delivery's routing key (= the producer event's destination, so the UI draws one queue node between the two applications) |
 | Error | the exception, when postrun reports `FAILURE`. A `Retry` is not an error: the retried delivery gets its own span, parented on this one by the headers `task.retry()` re-publishes. |
 
-Every span carries one child event, `celery.run`, so the transaction is never
+Every span carries one child event, `celery.run()`, so the transaction is never
 empty in the call tree. An upstream `Pinpoint-Sampled: s0` yields an unsampled
 worker span, which records nothing and keeps propagating `s0` to anything the
 task enqueues.
@@ -89,7 +89,7 @@ pinpoint-run --app-name my-worker --service-name my-service \
 from tasks import charge
 
 charge.delay(order_id=1)
-# └─ span event: CELERY  celery.app.task.Task.apply_async   destination: orders
+# └─ span event: CELERY  celery.app.task.Task.apply_async()   destination: orders
 #    (Pinpoint-* headers written into the task message)
 ```
 

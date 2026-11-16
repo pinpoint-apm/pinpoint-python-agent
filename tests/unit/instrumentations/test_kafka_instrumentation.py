@@ -182,7 +182,7 @@ def test_producer_send_emits_event_and_injects_headers(push_span):
         args=("billing",), kwargs={"value": b"payload"},
     )
     assert out == "future"
-    operation = "kafka.producer.kafka.KafkaProducer.send"
+    operation = "kafka.producer.kafka.KafkaProducer.send()"
     assert ("event_start", "root", operation) in rec.events
     assert ("event_end", "root", operation) in rec.events
     headers = captured["kwargs"].get("headers")
@@ -241,7 +241,7 @@ def test_producer_send_ends_event_when_annotation_fails_no_leak(push_span, monke
     assert calls["n"] == 1
     assert calls["boom"] == 1
     # Event opened, then ended on failure — no leaked span event.
-    operation = "kafka.producer.kafka.KafkaProducer.send"
+    operation = "kafka.producer.kafka.KafkaProducer.send()"
     assert ("event_start", "root", operation) in rec.events
     assert ("event_end", "root", operation) in rec.events
 
@@ -709,8 +709,8 @@ def test_caller_work_lands_on_the_held_record_span(fake_agent):
     # before the kafka.consume event the scope closes. What matters is which
     # span each landed on.
     per_span = [{e.op for e in s.all_events} for s in fake_agent.native_spans]
-    assert per_span == [{"kafka.consume", "handle-1"},
-                        {"kafka.consume", "handle-2"}]
+    assert per_span == [{"kafka.consume()", "handle-1"},
+                        {"kafka.consume()", "handle-2"}]
     assert all(s.end_called for s in fake_agent.native_spans)
 
 

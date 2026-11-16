@@ -49,7 +49,7 @@ from ..starlette import (
     make_middleware_stack_wrapper,
 )
 
-_OPERATION_CONTEXTMANAGER_EXIT = "fastapi.contextmanager.exit"
+_OPERATION_CONTEXTMANAGER_EXIT = "fastapi.concurrency.contextmanager_in_threadpool()"
 
 
 class FastAPIInstrumentor(BaseInstrumentor):

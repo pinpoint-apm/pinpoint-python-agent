@@ -104,8 +104,9 @@ def test_execute_wrapper_opens_root_span_with_handler_event(fake_agent):
         wrapped, instance=handler, args=(), kwargs={},
     ))
     assert ("span_start", "Tornado HTTP Server", "/users/42") in fake_agent.events
-    assert ("event_start", "Tornado HTTP Server", "UserHandler.get") in fake_agent.events
-    assert ("event_end", "Tornado HTTP Server", "UserHandler.get") in fake_agent.events
+    op_name = f"{__name__}.UserHandler.get()"
+    assert ("event_start", "Tornado HTTP Server", op_name) in fake_agent.events
+    assert ("event_end", "Tornado HTTP Server", op_name) in fake_agent.events
     assert ("span_end", "Tornado HTTP Server") in fake_agent.events
     assert fake_agent.last_native.status_code == 200
     assert fake_agent.last_native.url_stats == [("/users/42", "GET", 200)]

@@ -39,7 +39,7 @@ from .._util import (
 )
 
 _log = get_logger("urllib3")
-_OPERATION_URLOPEN = "urllib3.connectionpool.HTTPConnectionPool.urlopen"
+_OPERATION_URLOPEN = "urllib3.connectionpool.HTTPConnectionPool.urlopen()"
 
 _URLOPEN_HEADERS_POS = 3  # index of ``headers`` in HTTPConnectionPool.urlopen(
                           # method, url, body, headers, ...).

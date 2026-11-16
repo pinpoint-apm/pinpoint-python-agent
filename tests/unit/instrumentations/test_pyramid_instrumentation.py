@@ -186,11 +186,11 @@ def test_call_view_wrapper_emits_event_and_lifts_url_pattern():
         assert out == "rendered"
         # Inner functions get a `<locals>.` prefix in __qualname__, so match on suffix.
         assert any(
-            kind == "event_start" and op == "root" and name.endswith(".real_view")
+            kind == "event_start" and op == "root" and name == f"{__name__}.test_call_view_wrapper_emits_event_and_lifts_url_pattern.real_view()"
             for kind, op, name in rec.events
         )
         assert any(
-            kind == "event_end" and op == "root" and name.endswith(".real_view")
+            kind == "event_end" and op == "root" and name == f"{__name__}.test_call_view_wrapper_emits_event_and_lifts_url_pattern.real_view()"
             for kind, op, name in rec.events
         )
         assert request.environ.get("pinpoint.url_pattern") == "/items/{id}"

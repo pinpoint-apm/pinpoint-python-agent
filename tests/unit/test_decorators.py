@@ -50,7 +50,9 @@ def test_spanevent_no_parens_uses_function_qualname(push_span):
 
     assert compute(5) == 6
     starts = [e for e in rec.events if e[0] == "event_start"]
-    assert starts and starts[0][2].endswith("compute")
+    # Java agent API descriptor form: module.qualname(), <locals> dropped.
+    assert starts and starts[0][2] == (
+        f"{__name__}.test_spanevent_no_parens_uses_function_qualname.compute()")
 
 
 def test_spanevent_with_explicit_name(push_span):

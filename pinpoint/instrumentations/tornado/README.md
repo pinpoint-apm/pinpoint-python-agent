@@ -17,8 +17,9 @@ framework directly.
   coroutine that resolves arguments, runs `prepare()`, dispatches to
   `get`/`post`/…, and calls `finish()`. Wrapping it covers the entire request
   lifecycle from a single point.
-- **Handler span event** — named after the resolved handler method
-  (`UserHandler.get`), which is the most user-meaningful identifier in Tornado.
+- **Handler span event** — named after the resolved handler method as
+  `module.Class.method()` (`app.UserHandler.get()`, so the call tree's Class
+  column shows `UserHandler`), which is the most user-meaningful identifier in Tornado.
 - **URL statistics** are recorded against the request **path**, not a route
   template. Set `http_url_stat_enable_trim_path` (on by default) to keep
   high-cardinality paths from flooding the URL-stat table — see the
@@ -44,7 +45,7 @@ import tornado.web
 class UserHandler(tornado.web.RequestHandler):
     async def get(self, uid):
         # Root span   : Tornado HTTP Server  (GET /users/1)
-        #  └─ event   : UserHandler.get
+        #  └─ event   : app.UserHandler.get()
         self.write({"id": uid})
 
 async def main():

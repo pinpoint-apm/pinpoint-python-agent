@@ -39,7 +39,7 @@ from .._util import (
     wrap,
 )
 
-_OPERATION_SEND = "requests.sessions.Session.send"
+_OPERATION_SEND = "requests.sessions.Session.send()"
 
 
 class RequestsInstrumentor(BaseInstrumentor):

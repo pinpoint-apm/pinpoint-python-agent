@@ -156,11 +156,11 @@ def test_get_responder_sync_emits_span_event(push_span):
     assert traced(None, None) == "got"
     # Inner-class qualnames carry a ``<locals>`` prefix — match the suffix.
     assert any(
-        kind == "event_start" and op == "root" and name.endswith("UserResource.on_get")
+        kind == "event_start" and op == "root" and name == f"{__name__}.test_get_responder_sync_emits_span_event.UserResource.on_get()"
         for kind, op, name in rec.events
     )
     assert any(
-        kind == "event_end" and op == "root" and name.endswith("UserResource.on_get")
+        kind == "event_end" and op == "root" and name == f"{__name__}.test_get_responder_sync_emits_span_event.UserResource.on_get()"
         for kind, op, name in rec.events
     )
 
@@ -185,7 +185,7 @@ def test_get_responder_sync_records_exception(push_span):
     assert any(e[0] == "event_error" for e in rec.events)
     # Event must still close in the finally.
     assert any(
-        kind == "event_end" and op == "root" and name.endswith("Boom.on_get")
+        kind == "event_end" and op == "root" and name == f"{__name__}.test_get_responder_sync_records_exception.Boom.on_get()"
         for kind, op, name in rec.events
     )
 
@@ -229,11 +229,11 @@ def test_get_responder_async_emits_span_event(push_span):
     out = asyncio.run(traced(None, None))
     assert out == "got-async"
     assert any(
-        kind == "event_start" and op == "root" and name.endswith("AsyncUserResource.on_get")
+        kind == "event_start" and op == "root" and name == f"{__name__}.test_get_responder_async_emits_span_event.AsyncUserResource.on_get()"
         for kind, op, name in rec.events
     )
     assert any(
-        kind == "event_end" and op == "root" and name.endswith("AsyncUserResource.on_get")
+        kind == "event_end" and op == "root" and name == f"{__name__}.test_get_responder_async_emits_span_event.AsyncUserResource.on_get()"
         for kind, op, name in rec.events
     )
 
@@ -257,7 +257,7 @@ def test_get_responder_async_records_exception(push_span):
 
     assert any(e[0] == "event_error" for e in rec.events)
     assert any(
-        kind == "event_end" and op == "root" and name.endswith("AsyncBoom.on_get")
+        kind == "event_end" and op == "root" and name == f"{__name__}.test_get_responder_async_records_exception.AsyncBoom.on_get()"
         for kind, op, name in rec.events
     )
 
@@ -554,12 +554,12 @@ def test_falcon_real_wsgi_app_emits_root_and_handler_event(fake_agent):
     root_ends = [e for e in events
                  if e == ("span_end", "Falcon HTTP Server")]
     async_ends = [e for e in events
-                  if e == ("span_end", "async:wsgi.response.iteration")]
+                  if e == ("span_end", "async:wsgi.response.iteration()")]
     sp_events = [e for e in events if e[0] == "event_start"]
     assert len(new_spans) == 1, f"expected one root span, got: {events}"
     assert len(root_ends) == 1, f"root span must end, got: {events}"
     assert async_ends == [], f"eager response must not create a child, got: {events}"
-    assert any(name.endswith(".on_get") for _, _, name in sp_events), (
+    assert any(name.endswith(".UserResource.on_get()") for _, _, name in sp_events), (
         f"handler span event missing: {events}"
     )
 

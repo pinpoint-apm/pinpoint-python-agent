@@ -43,7 +43,7 @@ from django.http import JsonResponse
 
 def user_detail(request, uid):
     # Root span   : Django HTTP Server  (GET /users/<int:uid>/)
-    #  └─ event   : views.user_detail
+    #  └─ event   : views.user_detail()
     #      └─ event: SELECT ... (whichever DB driver is installed)
     #      └─ event: GET http://profile.internal/...
     requests.get(f"http://profile.internal/profiles/{uid}")
